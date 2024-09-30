@@ -6,7 +6,6 @@ focus-surfer.json
 .idea
 .idea/
 README.txt
-/_annotations.coco.json
 /processed_data
 /train_annotations.coco.json
 /test_annotations.coco.json
