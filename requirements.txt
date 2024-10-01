@@ -5,3 +5,6 @@ scikit-image~=0.24.0
 tifffile~=2024.9.20
 mlflow~=2.16.2
 dagshub~=0.3.37
+pillow~=10.3.0
+torchvision~=0.19.1+cu118
+tqdm~=4.66.5
