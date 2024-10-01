@@ -4,13 +4,14 @@ import os
 
 
 class BrainDataset(Dataset):
-    def __init__(self, root_dir, transform=None):
+    def __init__(self, root_dir, image_transform=None, mask_transform=None):
         self.root_dir = root_dir
         self.image_folder = os.path.join(root_dir, "images")
         self.mask_folder = os.path.join(root_dir, "masks")
         self.image_files = sorted(os.listdir(self.image_folder))
         self.mask_files = sorted(os.listdir(self.mask_folder))
-        self.transform = transform
+        self.image_transform = image_transform
+        self.mask_transform = mask_transform
 
     def __len__(self):
         return len(self.image_files)
@@ -24,8 +25,9 @@ class BrainDataset(Dataset):
         mask_path = os.path.join(self.mask_folder, mask_name)
         mask = Image.open(mask_path).convert("L")
 
-        if self.transform:
-            # Apply transformations
-            image_gray = self.transform(image_gray)
-            mask = self.transform(mask)
+        if self.image_transform:
+            image_gray = self.image_transform(image_gray)
+
+        if self.mask_transform:
+            mask = self.mask_transform(mask)
         return image_gray, mask
