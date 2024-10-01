@@ -79,9 +79,9 @@ def decode_token(token: str):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
 app = FastAPI()
-# @app.get("/")
-# def index():
-#     return {"message": "Welcome to the Image Segmentation using FastAPI app!"}
+@app.get("/")
+def index():
+    return {"message": "Welcome to the Image Segmentation using FastAPI app!"}
 
 
 # Token Generation Endpoint
