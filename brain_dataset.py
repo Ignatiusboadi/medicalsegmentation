@@ -1,5 +1,6 @@
 from PIL import Image
 from torch.utils.data import Dataset
+import numpy as np
 import os
 
 
@@ -20,11 +21,10 @@ class BrainDataset(Dataset):
         img_name = self.image_files[idx]
         img_path = os.path.join(self.image_folder, img_name)
         image = Image.open(img_path).convert("RGB")
-        image_gray = image.convert("L")  # Convert to grayscale
+        image_gray = np.array(image.convert("L")).astype(float)
         mask_name = self.mask_files[idx]
         mask_path = os.path.join(self.mask_folder, mask_name)
         mask = Image.open(mask_path).convert("L")
-
         if self.image_transform:
             image_gray = self.image_transform(image_gray)
 
