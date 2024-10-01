@@ -2,11 +2,10 @@ import os
 import json
 import cv2
 import numpy as np
-import skimage.draw
-import tifffile
 import shutil
 import mlflow
 import dagshub
+from PIL import Image
 
 dagshub.init(repo_owner='ignatiusboadi', repo_name='dagshub_proj_II', mlflow=True)
 
@@ -30,36 +29,63 @@ def end_active_run():
         mlflow.end_run()
 
 
-def create_mask(image_info, annotations, output_folder):
+with open('train_annotations.coco.json', 'r') as train_file:
+    train_annotations = json.load(train_file)
+
+with open("test_annotations.coco.json", "r") as test_file:
+    test_annotations = json.load(test_file)
+
+with open("valid_annotations.coco.json", "r") as valid_file:
+    valid_annotations = json.load(valid_file)
+
+
+def create_mask(image_path, data, output_dir):
     """function to create mask using coco annotations"""
-    mask_np = np.zeros((image_info['height'], image_info['width']), dtype=np.uint8)
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
 
-    for ann in annotations:
-        if image_info['id'] == ann['image_id']:
-            for seg in ann['segmentation']:
-                rr, cc = skimage.draw.polygon(seg[1::2], seg[0::2], mask_np.shape)
-                mask_np[rr, cc] = 255  # Set the mask pixels to 255 for tumor areas
+    file_name = os.path.basename(image_path)
+    image_id = None
+    width, height = None, None
 
-    mask_path = os.path.join(output_folder, f"{image_info['file_name'].replace('.jpg', '')}_mask.tif")
-    tifffile.imwrite(mask_path, mask_np)
+    for image_info in data['images']:
+        if image_info['file_name'] == file_name:
+            image_id = image_info['id']
+            width = image_info['width']
+            height = image_info['height']
+            break
+
+    if image_id is None:
+        print(f"Image {file_name} not found in dataset.")
+        return
+
+    mask = np.zeros((height, width), dtype=np.uint8)
+
+    for annotation in data['annotations']:
+        if annotation['image_id'] == image_id:
+            for segmentation in annotation['segmentation']:
+                polygon = np.array(segmentation).reshape(-1, 2)
+                cv2.fillPoly(mask, [polygon.astype(np.int32)], color=1)
+
+    mask_path = os.path.join(output_dir, file_name)
+    Image.fromarray(mask * 255).save(mask_path)
 
 
-def process_images(json_file, mask_output_folder, image_output_folder, original_image_dir):
+def get_all_mask_imgs(data, mask_output_dir, img_output_dir, origin_img_dir):
     """Take each image and create a mask with the location of the tumor."""
-    with open(json_file, 'r') as f:
-        data = json.load(f)
-
     images = data['images']
-    annotations = data['annotations']
 
-    os.makedirs(mask_output_folder, exist_ok=True)
-    os.makedirs(image_output_folder, exist_ok=True)
+    if not os.path.exists(mask_output_dir):
+        os.makedirs(mask_output_dir)
+    if not os.path.exists(img_output_dir):
+        os.makedirs(img_output_dir)
 
     for img in images:
-        create_mask(img, annotations, mask_output_folder)
-        original_image_path = os.path.join(original_image_dir, img['file_name'])
-        new_image_path = os.path.join(image_output_folder, os.path.basename(original_image_path))
-        shutil.copy2(original_image_path, new_image_path)
+        img_path = os.path.join(origin_img_dir, img['file_name'])
+        create_mask(img_path, data, mask_output_dir)
+        origin_img_path = os.path.join(origin_img_dir, img['file_name'])
+        new_img_path = os.path.join(img_output_dir, os.path.basename(origin_img_path))
+        shutil.copy2(origin_img_path, new_img_path)
 
 
 def compare_folders(folder1, folder2):
@@ -69,8 +95,8 @@ def compare_folders(folder1, folder2):
     f1_names = [file[:4] for file in f1_contents]
     f2_contents = os.listdir(folder2)
     f2_names = [file[:4] for file in f2_contents]
-    f1_only = set(f1_names) - set(f2_names)  # images in folder 1 only
-    f2_only = set(f2_names) - set(f1_names)  # images in folder 2 only
+    f1_only = set(f1_names) - set(f2_names)
+    f2_only = set(f2_names) - set(f1_names)
 
     for file in f1_contents:
         if file[:4] in f1_only:
@@ -80,24 +106,17 @@ def compare_folders(folder1, folder2):
             os.remove(os.path.join(folder2, file))
 
 
-data_dir = 'brain_data'
-processed_images_dir = 'processed_data'
+train_image_output = 'images/train'
+test_image_output = 'images/test'
+val_image_output = 'images/valid'
+train_mask_output = 'masks/train'
+test_mask_output = 'masks/test'
+val_mask_output = 'masks/valid'
 
-train_json_file = 'train_annotations.coco.json'
-train_mask_output = f'{processed_images_dir}/train/masks'
-train_image_output = f'{processed_images_dir}/train/images'
+get_all_mask_imgs(train_annotations, 'masks/train', 'images/train', 'brain_data/train')
+get_all_mask_imgs(valid_annotations, 'masks/valid', 'images/valid', 'brain_data/valid')
+get_all_mask_imgs(test_annotations, 'masks/test', 'images/test', 'brain_data/test')
 
-test_json_file = 'test_annotations.coco.json'
-test_mask_output = f'{processed_images_dir}/test/masks'
-test_image_output = f'{processed_images_dir}/test/images'
-
-valid_json_file = 'valid_annotations.coco.json'
-val_mask_output = f'{processed_images_dir}/valid/masks'
-val_image_output = f'{processed_images_dir}/valid/images'
-
-process_images(train_json_file, train_mask_output, train_image_output, f"{data_dir}/train")
-process_images(test_json_file, test_mask_output, test_image_output, f"{data_dir}/test")
-process_images(valid_json_file, val_mask_output, val_image_output, f"{data_dir}/valid")
 
 mlflow.log_param('tr num before', len(os.listdir(train_image_output)))
 mlflow.log_param('ts num before', len(os.listdir(test_image_output)))
