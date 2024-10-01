@@ -41,7 +41,7 @@ jobs:
      - name: DVC Pull latest data
        run: |
          dvc pull 
-        #-v || (echo "DVC pull failed. Ensure the data is available in the DVC remote." && exit 1)
+      #-v || (echo "DVC pull failed. Ensure the data is available in the DVC remote." && exit 1)
 
       # Step 7: Run the training script
       - name: Run training script
