@@ -27,25 +27,20 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 ########################################################################################
                # TOKEN AUTHENTICATION
 ########################################################################################
-# JWT settings
 SECRET_KEY = "fdb3e44ba75f4d770ee8de98e488bc3ebcf64dc3066c8140a1ae620c30964454"  # Replace with your own secret key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# User database (mock)
 users_db = {
     "admin": {"username": "admin", "password": pwd_context.hash("adminpass"), "role": "admin"},
     "user": {"username": "user", "password": pwd_context.hash("userpass"), "role": "user"},
 }
 
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-# Helper functions
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -79,12 +74,10 @@ def decode_token(token: str):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
 app = FastAPI()
-# @app.get("/")
-# def index():
-#     return {"message": "Welcome to the Image Segmentation using FastAPI app!"}
+@app.get("/")
+def index():
+    return {"message": "Welcome to the Image Segmentation using FastAPI app!"}
 
-
-# Token Generation Endpoint
 @app.post("/token")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
@@ -103,30 +96,26 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 ########################################################################################
                # DATA DRIFT DETECTION
 ########################################################################################
-# Directory to save uploaded files
 upload_dir = 'uploads'
 os.makedirs(upload_dir, exist_ok=True)
 
 @app.post("/upload/")
 async def Data_Drift_and_Test(file: UploadFile = File(...)):
-    # Save uploaded ZIP file
+    
     zip_path = os.path.join(upload_dir, file.filename)
     with open(zip_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    # Unzip the contents
+ 
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(upload_dir)
 
-    # Process JSON files from the unzipped folder
     train_json = os.path.join(upload_dir, 'datasets/train/_annotations.coco.json')
     test_json = os.path.join(upload_dir, 'datasets/test/_annotations.coco.json')
 
-    # Check if the files exist
     if not (os.path.exists(train_json) and os.path.exists(test_json)):
         raise HTTPException(status_code=400, detail="Required JSON files not found.")
 
-    # Load train and test JSON data
     with open(train_json, 'r') as f:
         train_data = json.load(f)
     with open(test_json, 'r') as f:
@@ -135,13 +124,12 @@ async def Data_Drift_and_Test(file: UploadFile = File(...)):
     train_images = pd.DataFrame(train_data['images'])
     test_images = pd.DataFrame(test_data['images'])
 
-    # Define column mapping
     column_mapping = ColumnMapping(
         target=None, 
         categorical_features=[],  
         numerical_features=['width', 'height']  
     )
-    # Generate Evidently Data Drift Report
+  
     report = Report(metrics=[
         DataDriftPreset(),
         DataQualityPreset(),
@@ -174,6 +162,6 @@ async def Data_Drift_and_Test(file: UploadFile = File(...)):
         zipf.write(html_report_path, os.path.basename(html_report_path))
         zipf.write(html_tests_path, os.path.basename(html_tests_path))
 
-    # Return the zip file as a response
+   
     return FileResponse(zip_file_path, media_type='application/zip', filename='report_bundle.zip')
 
