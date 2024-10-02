@@ -1,3 +1,49 @@
+# name: DVC Pull from GCS
+
+# on:
+#   push:
+#     branches:
+#       - main  # Trigger on push to the 'main' branch
+#   pull_request:
+#     branches:
+#       - main  # Trigger on pull request to the 'main' branch
+
+# jobs:
+#   dvc-pull:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # Checkout the repository
+#       - name: Checkout Repository
+#         uses: actions/checkout@v3
+
+#       # Set up Python to use DVC
+#       - name: Set up Python
+#         uses: actions/setup-python@v4
+#         with:
+#           python-version: '3.12'  # You can specify the required Python version here
+
+#       # Install DVC and the GCS dependency
+#       - name: Install DVC with GCS support
+#         run: |
+#           python -m pip install --upgrade pip
+#           pip install dvc[gs]  # Install DVC with GCS support
+
+#       # Authenticate Google Cloud with the service account
+#       - name: Set up Google Cloud credentials
+#         env:
+#           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+#         run: |
+#           echo $GOOGLE_APPLICATION_CREDENTIALS > /tmp/gcloud-service-key.json
+#           gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
+#           gcloud config set project focus-surfer-435213-g6
+
+#       # Pull the data from the GCS bucket using DVC
+#       - name: DVC Pull
+#         run: |
+#           dvc pull -v
+
+
 name: DVC Pull from GCS
 
 on:
@@ -21,15 +67,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'  # You can specify the required Python version here
+          python-version: '3.12'  # Specify the Python version required for your project
 
-      # Install DVC and the GCS dependency
+      # Install DVC with GCS support
       - name: Install DVC with GCS support
         run: |
           python -m pip install --upgrade pip
-          pip install dvc[gs]  # Install DVC with GCS support
+          pip install dvc[gs]  # Install DVC with Google Cloud Storage support
 
-      # Authenticate Google Cloud with the service account
+      # Authenticate with Google Cloud using the service account key
       - name: Set up Google Cloud credentials
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
@@ -37,9 +83,19 @@ jobs:
           echo $GOOGLE_APPLICATION_CREDENTIALS > /tmp/gcloud-service-key.json
           gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
           gcloud config set project focus-surfer-435213-g6
+          
+      # # Configure the DVC remote to use Google Cloud Storage (GCS)
+      # - name: Configure DVC Remote
+      #   run: |
+      #     dvc remote add -d myremote gs://your-bucket-name/path  # Change this to your GCS bucket path
+      #     dvc remote modify myremote credentialpath /tmp/gcloud-service-key.json
 
-      # Pull the data from the GCS bucket using DVC
-      - name: DVC Pull
+      # Fetch the metadata and pull the data from the GCS bucket using DVC
+      - name: DVC Fetch and Pull
         run: |
-          dvc pull -v
+          dvc fetch -v  # Fetch DVC metadata from the remote storage
+          dvc pull -v   # Pull the actual data from GCS
 
+      # # Optional: Clean up the temporary Google Cloud credentials file
+      # - name: Clean up credentials
+      #   run: rm /tmp/gcloud-service-key.json
