@@ -12,3 +12,4 @@ README.txt
 /saved_models
 /images
 /masks
+__pycache__/
