@@ -1,4 +1,6 @@
-from brain_dataset2 import BrainDataset
+import numpy as np
+
+from brain_dataset import BrainDataset
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -14,8 +16,8 @@ def clamp_tensor(x):
 
 def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    root_dir = 'processed_data'
-    lr = 0.001
+    root_dir = '/'
+    lr = 0.01
     num_epochs = 10
     batch_size = 32
     workers = 4
@@ -27,32 +29,21 @@ def main():
         transforms.Lambda(clamp_tensor)
     ])
 
-    # mask_transform = transforms.Compose([
-    #     transforms.Resize(224),
-    #     transforms.ToTensor()
-    # ])
+    train_images_path = 'images/train'
+    test_images_path = 'images/test'
+    val_images_path = 'images/valid'
 
-    train_images_path = os.path.join(root_dir, 'train/images')
-    test_images_path = os.path.join(root_dir, 'test/images')
-    val_images_path = os.path.join(root_dir, 'valid/images')
+    train_masks_path = 'masks/train'
+    test_masks_path = 'masks/test'
+    val_masks_path = 'masks/valid'
 
-    train_masks_path = os.path.join(root_dir, 'train/masks')
-    test_masks_path = os.path.join(root_dir, 'test/masks')
-    val_masks_path = os.path.join(root_dir, 'valid/masks')
-
-    # train_dataset = BrainDataset(train_path, image_transform=image_transform, mask_transform=mask_transform)
-    # test_dataset = BrainDataset(test_path, image_transform=image_transform, mask_transform=mask_transform)
-    # val_dataset = BrainDataset(val_path, image_transform=image_transform, mask_transform=mask_transform)
-
-    train_dataset = BrainDataset(train_images_path, train_masks_path, transform=transform)
-    val_dataset = BrainDataset(val_images_path, val_masks_path, transform=transform)
-    test_dataset = BrainDataset(test_images_path, test_masks_path, transform=transform)
-    # test_dataset = BrainDataset(test_path, transform=image_transform)
-    # val_dataset = BrainDataset(val_path, transform=image_transform)
+    train_dataset = BrainDataset(root_dir, train_images_path, train_masks_path, transform=transform)
+    val_dataset = BrainDataset(root_dir, val_images_path, val_masks_path, transform=transform)
+    test_dataset = BrainDataset(root_dir, test_images_path, test_masks_path, transform=transform)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=workers)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=workers)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=workers)
 
     model = smp.Unet(encoder_name="resnet50", encoder_weights='imagenet', in_channels=1, classes=1).to(device)
     criterion = torch.nn.BCEWithLogitsLoss()
@@ -62,6 +53,7 @@ def main():
         return batch[0].to(device_type), batch[1].to(device_type)
 
     print('Starting training...')
+    best_val_loss = 1
     for epoch in range(num_epochs):
         model.train()
 
@@ -71,8 +63,11 @@ def main():
             output = model(input_img)
             loss = criterion(output, mask)
             optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
             running_loss += loss.item()
-    #
+
             if (i + 1) % 5 == 0:
                 print(f"Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{len(train_loader)}], Loss: {loss.item():.4f}")
 
@@ -94,8 +89,9 @@ def main():
         avg_valid_loss = valid_loss / len(val_loader)
         print(f'Epoch [{epoch + 1}/{num_epochs}] Average Validation Loss: {avg_valid_loss:.4f}')
 
-        # if (epoch + 1) % 5 == 0:
-        #     torch.save(model.state_dict(), f'checkpoint_epoch_{epoch + 1}.pth')
+        if avg_valid_loss < best_val_loss:
+            best_val_loss = avg_valid_loss
+            torch.save(model.state_dict(), f'saved_models/best_model.pth')
 
 
 if __name__ == '__main__':
