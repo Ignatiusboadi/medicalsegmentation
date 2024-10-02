@@ -36,7 +36,7 @@ jobs:
         run: |
           echo $GOOGLE_APPLICATION_CREDENTIALS > /tmp/gcloud-service-key.json
           gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
-          gcloud config set project your-gcp-project-id
+          gcloud config set project focus-surfer-435213-g6
 
       # Pull the data from the GCS bucket using DVC
       - name: DVC Pull
