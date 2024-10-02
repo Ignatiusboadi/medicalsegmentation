@@ -80,10 +80,10 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
         run: |
-          echo ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }} > /tmp/gcloud-service-key.json
+          echo $GOOGLE_APPLICATION_CREDENTIALS > /tmp/gcloud-service-key.json
           gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
-          gcloud config set project focus-surfer-435213-g6  # Replace with your GCP project ID
-
+          gcloud config set project focus-surfer-435213-g6
+          
       # # Configure the DVC remote to use Google Cloud Storage (GCS)
       # - name: Configure DVC Remote
       #   run: |
