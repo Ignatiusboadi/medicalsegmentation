@@ -84,11 +84,11 @@ jobs:
           gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
           gcloud config set project focus-surfer-435213-g6  # Replace with your GCP project ID
 
-      # Configure the DVC remote to use Google Cloud Storage (GCS)
-      - name: Configure DVC Remote
-        run: |
-          dvc remote add -d myremote gs://your-bucket-name/path  # Change this to your GCS bucket path
-          dvc remote modify myremote credentialpath /tmp/gcloud-service-key.json
+      # # Configure the DVC remote to use Google Cloud Storage (GCS)
+      # - name: Configure DVC Remote
+      #   run: |
+      #     dvc remote add -d myremote gs://your-bucket-name/path  # Change this to your GCS bucket path
+      #     dvc remote modify myremote credentialpath /tmp/gcloud-service-key.json
 
       # Fetch the metadata and pull the data from the GCS bucket using DVC
       - name: DVC Fetch and Pull
