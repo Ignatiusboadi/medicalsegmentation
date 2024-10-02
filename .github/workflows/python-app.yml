@@ -1,48 +1,94 @@
-name: Retrain Model on DVC Data Changes
+# name: Retrain Model on DVC Data Changes
+
+# on:
+#   push:
+#     branches:
+#       - main  # Trigger on pushes to the 'main' branch
+
+# jobs:
+#   retrain:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # Step 1: Checkout the repository
+#       - name: Checkout code
+#         uses: actions/checkout@v2
+
+#       # Step 2: Set up DVC
+#       - name: Set up DVC
+#         uses: iterative/setup-dvc@v1
+#         with:
+#           version: 'latest'
+
+#       # Step 3: Set up Python environment
+#       - name: Set up Python
+#         uses: actions/setup-python@v2
+#         with:
+#           python-version: '3.11.5'
+
+#       # Step 4: Install dependencies
+#       - name: Install dependencies
+#         run: |
+#           python -m pip install --upgrade pip
+#           pip install -r requirements.txt
+
+#       # Step 5: Check DVC remote configuration
+#       - name: Check DVC remote configuration
+#         run: |
+#           dvc remote list  # Verifies that the remotes are properly configured
+
+#       # Step 6: DVC Pull latest data with debug
+#       - name: DVC Pull latest data
+#         run: |
+#           dvc pull -v --jobs 1 || (echo "DVC pull failed. Ensure the data is available in the DVC remote." && exit 1)
+
+#       # Step 7: Run the training script
+#       - name: Run training script
+#         run: |
+#           python main.py
+
+name: DVC Pull from GCS
 
 on:
   push:
     branches:
-      - main  # Trigger on pushes to the 'main' branch
+      - main  # Trigger on push to the 'main' branch
+  pull_request:
+    branches:
+      - main  # Trigger on pull request to the 'main' branch
 
 jobs:
-  retrain:
+  dvc-pull:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v2
+      # Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      # Step 2: Set up DVC
-      - name: Set up DVC
-        uses: iterative/setup-dvc@v1
-        with:
-          version: 'latest'
-
-      # Step 3: Set up Python environment
+      # Set up Python to use DVC
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11.5'
+          python-version: '3.12'  # You can specify the required Python version here
 
-      # Step 4: Install dependencies
-      - name: Install dependencies
+      # Install DVC and the GCS dependency
+      - name: Install DVC with GCS support
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install dvc[gs]  # Install DVC with GCS support
 
-      # Step 5: Check DVC remote configuration
-      - name: Check DVC remote configuration
+      # Authenticate Google Cloud with the service account
+      - name: Set up Google Cloud credentials
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
         run: |
-          dvc remote list  # Verifies that the remotes are properly configured
+          echo $GOOGLE_APPLICATION_CREDENTIALS > /tmp/gcloud-service-key.json
+          gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
+          gcloud config set project your-gcp-project-id
 
-      # Step 6: DVC Pull latest data with debug
-      - name: DVC Pull latest data
+      # Pull the data from the GCS bucket using DVC
+      - name: DVC Pull
         run: |
-          dvc pull -v --jobs 1 || (echo "DVC pull failed. Ensure the data is available in the DVC remote." && exit 1)
+          dvc pull
 
-      # Step 7: Run the training script
-      - name: Run training script
-        run: |
-          python main.py
