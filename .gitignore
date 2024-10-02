@@ -10,3 +10,4 @@ README.txt
 /train_annotations.coco.json
 /test_annotations.coco.json
 /valid_annotations.coco.json
+/saved_models
