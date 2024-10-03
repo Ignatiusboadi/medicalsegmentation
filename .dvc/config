@@ -1,0 +1,4 @@
+[core]
+    remote = brain_remote
+['remote "brain_remote"']
+    url = gs://brain_image_data

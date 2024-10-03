@@ -5,3 +5,10 @@ venv
 .idea/
 README.txt
 __pycache__/
+/.dvcignore
+/brain_data
+/images
+/masks
+/test_annotations.coco.json
+/train_annotations.coco.json
+/valid_annotations.coco.json
