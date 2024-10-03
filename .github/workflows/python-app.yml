@@ -95,7 +95,7 @@ jobs:
         run: |
           dvc remote list
           dvc remote modify brain_remote credentialpath /tmp/gcloud-service-key.json
-          dvc pull -v
+          dvc pull -v -f
 #          dvc fetch -v  # Fetch DVC metadata from the remote storage
 #          dvc pull -v   # Pull the actual data from GCS
 
