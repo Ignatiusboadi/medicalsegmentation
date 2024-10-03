@@ -1,15 +1,7 @@
-/brain_data
 venv
 .pyc
-focus-surfer.json
 .env
 .idea
 .idea/
 README.txt
-/train_annotations.coco.json
-/test_annotations.coco.json
-/valid_annotations.coco.json
-/saved_models
-/images
-/masks
 __pycache__/
