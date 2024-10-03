@@ -94,7 +94,7 @@ jobs:
       - name: DVC Fetch and Pull
         run: |
 #          dvc init
-#          gsutil list gs://brain_image_data/files
+          gsutil list gs://brain_image_data/files
           dvc add remote -d brain_remote gs://brain_image_data
           dvc remote list
 #          dvc fetch  # Fetch DVC metadata from the remote storage
