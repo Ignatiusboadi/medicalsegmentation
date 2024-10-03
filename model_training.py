@@ -1,7 +1,7 @@
-import numpy as np
+import dagshub
+import mlflow
 
 from brain_dataset import BrainDataset
-from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
@@ -9,18 +9,43 @@ import os
 import segmentation_models_pytorch as smp
 import torch
 
+dagshub.init(repo_owner='ignatiusboadi', repo_name='dagshub_proj_II', mlflow=True)
+
+os.environ['MLFLOW_TRACKING_USERNAME'] = 'ignatiusboadi'
+os.environ['MLFLOW_TRACKING_PASSWORD'] = '67ea7e8b48b9a51dd1748b8bb71906cc5806eb09'
+os.environ['MLFLOW_TRACKING_URI'] = 'https://dagshub.com/ignatiusboadi/dagshub_proj_II.mlflow'
+
+mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
+mlflow.set_experiment("proj-II-data-preprocessing")
+
+
+def start_or_get_run():
+    if mlflow.active_run() is None:
+        mlflow.start_run()
+    else:
+        print(f"Active run with UUID {mlflow.active_run().info.run_id} already exists")
+
+
+def end_active_run():
+    if mlflow.active_run() is not None:
+        mlflow.end_run()
+
 
 def clamp_tensor(x):
     return x.clamp(0, 1)
 
 
 def main():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    end_active_run()
+    start_or_get_run()
+    device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     root_dir = '/'
     lr = 0.001
     num_epochs = 10
     batch_size = 32
     workers = 4
+
+    mlflow.log_params({'device': device, 'l_rate': lr, 'epochs': num_epochs, 'batch': batch_size, })
 
     transform = transforms.Compose([
         transforms.Resize(224),
@@ -54,6 +79,7 @@ def main():
 
     print('Starting training...')
     best_val_loss = 1
+    training_loss = 5
     for epoch in range(num_epochs):
         model.train()
 
@@ -91,7 +117,9 @@ def main():
 
         if avg_valid_loss < best_val_loss:
             best_val_loss = avg_valid_loss
-            torch.save(model.state_dict(), f'saved_models/best_model.pth')
+            torch.save(model.state_dict(), f'models/best_model.pth')
+            training_loss = avg_train_loss
+    mlflow.log_metrics({'best validation loss': best_val_loss, 'final training loss': training_loss})
 
 
 if __name__ == '__main__':
