@@ -12,3 +12,4 @@ __pycache__/
 /test_annotations.coco.json
 /train_annotations.coco.json
 /valid_annotations.coco.json
+/models
