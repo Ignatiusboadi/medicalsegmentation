@@ -93,6 +93,7 @@ jobs:
       # Fetch the metadata and pull the data from the GCS bucket using DVC
       - name: DVC Fetch and Pull
         run: |
+          dvc remote add -d brain_remote gs://brain_image_data
           dvc remote list
           dvc fetch -v  # Fetch DVC metadata from the remote storage
 #          dvc pull -v   # Pull the actual data from GCS
