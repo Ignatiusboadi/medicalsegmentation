@@ -1,4 +1,0 @@
-[core]
-    remote = brain_data_remote
-['remote "brain_data_remote"']
-    url = gs://unet_brain_data
