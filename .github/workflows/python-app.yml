@@ -94,8 +94,9 @@ jobs:
       - name: DVC Fetch and Pull
         run: |
           dvc remote list
+          dvc pull -v
 #          dvc fetch -v  # Fetch DVC metadata from the remote storage
-          dvc pull -v   # Pull the actual data from GCS
+#          dvc pull -v   # Pull the actual data from GCS
 
       # # Optional: Clean up the temporary Google Cloud credentials file
       # - name: Clean up credentials
