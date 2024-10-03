@@ -93,9 +93,12 @@ jobs:
       # Fetch the metadata and pull the data from the GCS bucket using DVC
       - name: DVC Fetch and Pull
         run: |
+#          dvc init
+          gsutil list gs://brain_image_data/files
+          dvc add remote -d brain_remote gs://brain_image_data
           dvc remote list
-          dvc fetch  # Fetch DVC metadata from the remote storage
-          dvc pull   # Pull the actual data from GCS
+#          dvc fetch  # Fetch DVC metadata from the remote storage
+#          dvc pull   # Pull the actual data from GCS
 
       # # Optional: Clean up the temporary Google Cloud credentials file
       # - name: Clean up credentials
