@@ -13,3 +13,4 @@ __pycache__/
 /train_annotations.coco.json
 /valid_annotations.coco.json
 /models
+/mlruns
