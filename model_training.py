@@ -27,10 +27,10 @@ def clamp_tensor(x):
 
 
 def main():
-    dagshub.init(repo_owner='ignatiusboadi', repo_name='dagshub_proj_II', mlflow=True)
     os.environ['MLFLOW_TRACKING_USERNAME'] = 'ignatiusboadi'
     os.environ['MLFLOW_TRACKING_PASSWORD'] = '67ea7e8b48b9a51dd1748b8bb71906cc5806eb09'
     os.environ['MLFLOW_TRACKING_URI'] = 'https://dagshub.com/ignatiusboadi/dagshub_proj_II.mlflow'
+    dagshub.init(repo_owner='ignatiusboadi', repo_name='dagshub_proj_II', mlflow=True)
 
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
     mlflow.set_experiment("proj-II-model-training")
