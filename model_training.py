@@ -27,17 +27,25 @@ def clamp_tensor(x):
 
 
 def main():
-    # Retrieve environment variables
-    mlflow_username = os.getenv('MLFLOW_TRACKING_USERNAME')
-    mlflow_password = os.getenv('MLFLOW_TRACKING_PASSWORD')
-    mlflow_uri = os.getenv('MLFLOW_TRACKING_URI')
+    # # Retrieve environment variables
+    # mlflow_username = os.getenv('MLFLOW_TRACKING_USERNAME')
+    # mlflow_password = os.getenv('MLFLOW_TRACKING_PASSWORD')
+    # mlflow_uri = os.getenv('MLFLOW_TRACKING_URI')
 
-    # Set the environment variables for MLflow
-    os.environ['MLFLOW_TRACKING_USERNAME'] = str(mlflow_username)
-    os.environ['MLFLOW_TRACKING_PASSWORD'] = str(mlflow_password)
-    os.environ['MLFLOW_TRACKING_URI'] = str(mlflow_uri)
+    # # Set the environment variables for MLflow
+    # os.environ['MLFLOW_TRACKING_USERNAME'] = str(mlflow_username)
+    # os.environ['MLFLOW_TRACKING_PASSWORD'] = str(mlflow_password)
+    # os.environ['MLFLOW_TRACKING_URI'] = str(mlflow_uri)
 
-    dagshub.init(repo_owner='ignatiusboadi', repo_name='dagshub_proj_II', mlflow=True)
+    # dagshub.init(repo_owner='ignatiusboadi', repo_name='dagshub_proj_II', mlflow=True)
+
+    # Load environment variables (make sure they're set in GitHub Secrets)
+    dagshub.init(
+        repo_owner=os.environ['MLFLOW_TRACKING_USERNAME'],
+        repo_name='dagshub_proj_II',
+        mlflow=True,
+        token=os.environ['MLFLOW_TRACKING_PASSWORD']  # Use the token here
+    )
 
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
     mlflow.set_experiment("proj-II-model-training")
