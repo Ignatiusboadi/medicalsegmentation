@@ -63,7 +63,7 @@ jobs:
       - name: Model Retraining
         run: |
           pip install -r requirements.txt
-          python model_training.py
+          python model_testing.py
 
 
       # Optional: Clean up the temporary Google Cloud credentials file
