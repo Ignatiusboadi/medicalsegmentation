@@ -33,9 +33,9 @@ def main():
     mlflow_uri = os.getenv('MLFLOW_TRACKING_URI')
 
     # Set the environment variables for MLflow
-    os.environ['MLFLOW_TRACKING_USERNAME'] = mlflow_username
-    os.environ['MLFLOW_TRACKING_PASSWORD'] = mlflow_password
-    os.environ['MLFLOW_TRACKING_URI'] = mlflow_uri
+    os.environ['MLFLOW_TRACKING_USERNAME'] = str(mlflow_username)
+    os.environ['MLFLOW_TRACKING_PASSWORD'] = str(mlflow_password)
+    os.environ['MLFLOW_TRACKING_URI'] = str(mlflow_uri)
 
     dagshub.init(repo_owner='ignatiusboadi', repo_name='dagshub_proj_II', mlflow=True)
 
