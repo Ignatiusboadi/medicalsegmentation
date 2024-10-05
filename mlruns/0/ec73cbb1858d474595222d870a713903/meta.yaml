@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/iboad/PycharmProjects/medicalsegmentation2/mlruns/0/ec73cbb1858d474595222d870a713903/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: ec73cbb1858d474595222d870a713903
+run_name: puzzled-hawk-135
+run_uuid: ec73cbb1858d474595222d870a713903
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1727980065808
+status: 1
+tags: []
+user_id: iboad
