@@ -1,12 +1,12 @@
-# name: DVC Pull from GCS
+name: DVC Pull from GCS
 
-# on:
-#   push:
-#     branches:
-#       - main  # Trigger on push to the 'main' branch
-#   pull_request:
-#     branches:
-#       - main  # Trigger on pull request to the 'main' branch
+on:
+  push:
+    branches:
+      - main  # Trigger on push to the 'main' branch
+  pull_request:
+    branches:
+      - main  # Trigger on pull request to the 'main' branch
 
 # jobs:
 #   dvc-pull:
