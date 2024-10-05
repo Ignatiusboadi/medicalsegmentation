@@ -78,7 +78,7 @@ app = FastAPI()
 def index():
     return {"message": "Welcome to the Image Segmentation using FastAPI app!"}
 
-@app.post("/token")
+@app.post("/Token/")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
@@ -93,28 +93,17 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-########################################################################################
-               # DATA DRIFT DETECTION
-########################################################################################
+#######################################################################################
+               #DATA DRIFT DETECTION
+#######################################################################################
 upload_dir = 'uploads'
 os.makedirs(upload_dir, exist_ok=True)
 
-@app.post("/upload/")
-async def Data_Drift_and_Test(file: UploadFile = File(...)):
-    
-    zip_path = os.path.join(upload_dir, file.filename)
-    with open(zip_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+@app.post("/Drift Monitoring/")
+async def Data_Drift_and_Test():
 
- 
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall(upload_dir)
-
-    train_json = os.path.join(upload_dir, 'datasets/train/_annotations.coco.json')
-    test_json = os.path.join(upload_dir, 'datasets/test/_annotations.coco.json')
-
-    if not (os.path.exists(train_json) and os.path.exists(test_json)):
-        raise HTTPException(status_code=400, detail="Required JSON files not found.")
+    train_json = 'train_annotations.coco.json'
+    test_json = 'test_annotations.coco.json'
 
     with open(train_json, 'r') as f:
         train_data = json.load(f)
@@ -165,3 +154,20 @@ async def Data_Drift_and_Test(file: UploadFile = File(...)):
    
     return FileResponse(zip_file_path, media_type='application/zip', filename='report_bundle.zip')
 
+
+#######################################################################################
+               #PREDICTION ENDPOINT
+#######################################################################################
+@app.post("/Prediction/")
+async def Image_Segmentation():
+    import model_testing
+
+    output_dir = 'output_images'
+    zip_filename = 'output_images.zip'
+    zip_filename_path = zip_filename
+
+    return FileResponse(zip_filename_path, media_type='application/zip', filename=zip_filename)
+
+if __name__ == '__main__':
+    main()
+    

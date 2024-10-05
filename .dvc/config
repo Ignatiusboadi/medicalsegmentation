@@ -2,3 +2,4 @@
     remote = brain_remote
 ['remote "brain_remote"']
     url = gs://brain_image_data
+    credentialpath = ../focus-surfer.json
