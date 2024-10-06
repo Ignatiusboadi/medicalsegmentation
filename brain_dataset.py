@@ -37,3 +37,10 @@ class BrainDataset(Dataset):
                 output = img_gray, None
 
         return output
+
+    def get_original_size(self, idx):
+        """Return the original size (width, height) of the image."""
+        img_name = self.img_files[idx]
+        img_path = os.path.join(self.img_dir, img_name)
+        img = Image.open(img_path)
+        return img.size
