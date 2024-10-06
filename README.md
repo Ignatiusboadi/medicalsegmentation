@@ -7,12 +7,12 @@ In this project, we will focus on MLOps by developing an image segmentation syst
 ## User Instructions
 - Create a new folder medical-segmentation-system
 - Clone the GitHub repository
-git clone < paste the url here>
+git clone < paste the url here >
 cd face-recognition-system
 - Create a virtual environment
   * Install the virtual environment: pip install virtualenv
-  * run: python -m <your-virtual-env-name>
-  * Activate your virtual environment: source <your-virtual-env-name>/bin/activate # (On windows use) <your-virtual-env-name>\Scripts\activate
+  * run: python -m  < your-virtual-env-name >
+  * Activate your virtual environment: source < your-virtual-env-name >/bin/activate # (On windows use) < your-virtual-env-name >\Scripts\activate
   * To deactivate the virtual environment, run: deactivate
 - Run the requirements.txt file as it contains the Python dependencies that we will need for the project.
   * run: pip install -r requirements.txt
