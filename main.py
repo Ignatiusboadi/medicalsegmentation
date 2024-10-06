@@ -57,7 +57,7 @@ def upload_to_gcp(source_file_name, destination_folder):
 ########################################################################################
 # TOKEN AUTHENTICATION
 ########################################################################################
-SECRET_KEY = "fdb3e44ba75f4d770ee8de98e488bc3ebcf64dc3066c8140a1ae620c30964454"  # Replace with your own secret key
+SECRET_KEY = "fdb3e44ba75f4d770ee8de98e488bc3ebcf64dc3066c8140a1ae620c30964454"  
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -124,7 +124,7 @@ def index():
 @app.post("/token")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
-    email = users_db[user]['email']
+    email = user['email']
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -147,11 +147,11 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-#######################################################################################
-#DATA DRIFT DETECTION
-#######################################################################################
-@app.post("/Drift Monitoring")
-async def Data_Drift_and_Test():
+@app.post("/Drift Monitoring/")
+async def Data_Drift_and_Test(token: str = Depends(oauth2_scheme)):
+
+    decode_token(token)
+
     train_json = 'train_annotations.coco.json'
     test_json = 'test_annotations.coco.json'
 
@@ -206,11 +206,11 @@ async def Data_Drift_and_Test():
 #######################################################################################
 # PREDICTION ENDPOINT
 #######################################################################################
-@app.post("/prediction")
-async def image_segmentation(file: UploadFile = File(...)):
-    f = faker.Faker()
-    folder_name = f.name().split()[0]
-    temp_zip_path = f"{folder_name}.zip"
+@app.post("/Prediction/")
+async def Image_Segmentation(token: str = Depends(oauth2_scheme)):
+    decode_token(token)
+
+    import model_testing
 
     with open(temp_zip_path, "wb") as temp_zip_file:
         content = await file.read()
@@ -250,7 +250,7 @@ async def image_segmentation(file: UploadFile = File(...)):
 
         mask_resized = (mask_resized * 255).astype(np.uint8)
         cv2.imwrite(output_mask_path, mask_resized)
-    output_zip = f'segmented_{''.join(file.filename.split('.')[:-1])}_images.zip'
+    output_zip = f"segmented_{''.join(file.filename.split('.')[:-1])}_images.zip"
     shutil.make_archive(output_dir, output_zip)
 
     zip_filename = output_zip
