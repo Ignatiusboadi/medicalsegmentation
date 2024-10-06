@@ -18,6 +18,11 @@ import json
 import jwt
 import numpy as np
 import pandas as pd
+import shutil
+import segmentation_models_pytorch as smp
+import torch
+import warnings
+import yagmail
 from evidently.report import Report
 from evidently.metric_preset import DataDriftPreset, DataQualityPreset
 from evidently.metrics.base_metric import generate_column_metrics
@@ -28,9 +33,6 @@ from evidently.test_preset import DataStabilityTestPreset, NoTargetPerformanceTe
 from evidently.tests import *
 import shutil
 from evidently import ColumnMapping
-import torch
-import warnings
-import yagmail
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -224,9 +226,11 @@ async def image_segmentation(file: UploadFile = File(...)):
         transforms.Normalize(mean=[0.485], std=[0.229]),
         transforms.Lambda(clamp_tensor)
     ])
-    model = torch.load('models/best_model.pth')
-    model.eval()
     device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
+    model = smp.Unet(encoder_name='resnet50', encoder_weights='imagenet', in_channels=1, classes=1).to(device)
+    model_path = torch.load('models/best_model.pth')
+    model.load_state_dict(torch.load(model_path))
+    model.eval()
 
     output_dir = f"{folder_name}_output"
     os.mkdir(output_dir)
@@ -246,11 +250,8 @@ async def image_segmentation(file: UploadFile = File(...)):
 
         mask_resized = (mask_resized * 255).astype(np.uint8)
         cv2.imwrite(output_mask_path, mask_resized)
+    output_zip = f'segmented_{''.join(file.filename.split('.')[:-1])}_images.zip'
+    shutil.make_archive(output_dir, output_zip)
 
-    with zipfile.ZipFile('segmented_images.zip', 'w') as zipf:
-        for root, dirs, files in os.walk(output_dir):
-            for file in files:
-                zipf.write(os.path.join(root, file), file)
-
-    zip_filename = f'segmented_images.zip'
+    zip_filename = output_zip
     return FileResponse(zip_filename, media_type='application/zip', filename=zip_filename)
