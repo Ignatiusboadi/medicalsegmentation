@@ -1,14 +1,22 @@
+from brain_dataset import BrainDataset
 from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse
+from google.cloud import storage
 from datetime import datetime, timedelta, timezone
 from typing import Union
 from jwt import PyJWTError
 from passlib.context import CryptContext
+from torch.utils.data import DataLoader
+from torchvision import transforms
+
+import cv2
+import faker
 import os
 import zipfile
 import json
 import jwt
+import numpy as np
 import pandas as pd
 from evidently.report import Report
 from evidently.metric_preset import DataDriftPreset, DataQualityPreset
@@ -20,10 +28,29 @@ from evidently.test_preset import DataStabilityTestPreset, NoTargetPerformanceTe
 from evidently.tests import *
 import shutil
 from evidently import ColumnMapping
+import torch
 import warnings
 import yagmail
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
+
+cred = 'focus-surfer-435213-g6.json'
+
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = cred
+
+
+def clamp_tensor(x):
+    return x.clamp(0, 1)
+
+
+def upload_to_gcp(source_file_name, destination_folder):
+    bucket_name = 'face-verification-images'
+    destination_blob_name = f'{destination_folder}/{source_file_name}'
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(source_file_name)
+    print(f"File {source_file_name} uploaded to {destination_blob_name}.")
 
 ########################################################################################
 # TOKEN AUTHENTICATION
@@ -175,14 +202,55 @@ async def Data_Drift_and_Test():
 
 
 #######################################################################################
-#PREDICTION ENDPOINT
+# PREDICTION ENDPOINT
 #######################################################################################
 @app.post("/prediction")
-async def image_segmentation(folder: UploadFile = File(...)):
-    with zipfile.ZipFile(folder, 'r') as zip_ref:
-        zip_ref.extractall(upload_dir)
-    output_dir = 'output_images'
-    zip_filename = 'output_images.zip'
-    zip_filename_path = zip_filename
+async def image_segmentation(file: UploadFile = File(...)):
+    f = faker.Faker()
+    folder_name = f.name().split()[0]
+    temp_zip_path = f"{folder_name}.zip"
 
-    return FileResponse(zip_filename_path, media_type='application/zip', filename=zip_filename)
+    with open(temp_zip_path, "wb") as temp_zip_file:
+        content = await file.read()
+        temp_zip_file.write(content)
+
+    with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+        zip_ref.extractall(folder_name)
+    os.remove(temp_zip_path)
+
+    transform = transforms.Compose([
+        transforms.Resize(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485], std=[0.229]),
+        transforms.Lambda(clamp_tensor)
+    ])
+    model = torch.load('models/best_model.pth')
+    model.eval()
+    device = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
+
+    output_dir = f"{folder_name}_output"
+    os.mkdir(output_dir)
+    data2predict = BrainDataset(root_dir, folder_name, transform=transform)
+    pred_loader = DataLoader(data2predict, batch_size=1, shuffle=False)
+
+    for i, (data, filename) in enumerate(pred_loader):
+        data = data.to(device)
+        pred_logits = model(data)
+        pred_binary = (pred_logits > 0.5).float()
+        mask = pred_binary.squeeze().cpu().numpy()
+        original_size = data2predict.get_original_size(i)
+        mask_resized = cv2.resize(mask, (original_size[1], original_size[0]))
+
+        mask_filename = os.path.basename(filename[0])
+        output_mask_path = os.path.join(output_dir, mask_filename)
+
+        mask_resized = (mask_resized * 255).astype(np.uint8)
+        cv2.imwrite(output_mask_path, mask_resized)
+
+    with zipfile.ZipFile('segmented_images.zip', 'w') as zipf:
+        for root, dirs, files in os.walk(output_dir):
+            for file in files:
+                zipf.write(os.path.join(root, file), file)
+
+    zip_filename = f'segmented_images.zip'
+    return FileResponse(zip_filename, media_type='application/zip', filename=zip_filename)
