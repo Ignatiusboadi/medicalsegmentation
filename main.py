@@ -1,4 +1,4 @@
-from brain_dataset import BrainDataset
+from brain_dataset import ProdBrainDataset
 from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import StreamingResponse, FileResponse, HTMLResponse
@@ -10,6 +10,7 @@ from passlib.context import CryptContext
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
+import logging
 import cv2
 import faker
 import os
@@ -46,13 +47,33 @@ def clamp_tensor(x):
 
 
 def upload_to_gcp(source_file_name, destination_folder):
-    bucket_name = 'face-verification-images'
+    bucket_name = 'brain-scan-data'
     destination_blob_name = f'{destination_folder}/{source_file_name}'
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
     blob.upload_from_filename(source_file_name)
     print(f"File {source_file_name} uploaded to {destination_blob_name}.")
+
+
+def draw_mask_border(image, mask_generated):
+    print('image before', image)
+    logging.info('image before', image)
+    image = cv2.imread(image)
+    mask_generated = cv2.imread(mask_generated)
+    if len(mask_generated.shape) == 3:
+        gray_mask = cv2.cvtColor(mask_generated, cv2.COLOR_BGR2GRAY)
+    else:
+        gray_mask = mask_generated
+
+    _, binary_mask = cv2.threshold(gray_mask, 1, 255, cv2.THRESH_BINARY)
+    contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    print('image', image)
+    bordered_image = image.copy()
+    cv2.drawContours(bordered_image, contours, -1, (0, 0, 255), 2)
+
+    return bordered_image
+
 
 ########################################################################################
 # TOKEN AUTHENTICATION
@@ -151,8 +172,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 #DATA DRIFT DETECTION
 #######################################################################################
 @app.post("/Drift Monitoring")
-async def Data_Drift_and_Test(token: str = Depends(oauth2_scheme)):
-
+async def data_drift_and_test(token: str = Depends(oauth2_scheme)):
     decode_token(token)
     train_json = 'train_annotations.coco.json'
     test_json = 'test_annotations.coco.json'
@@ -212,16 +232,22 @@ async def Data_Drift_and_Test(token: str = Depends(oauth2_scheme)):
 async def image_segmentation(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
     decode_token(token)
     f = faker.Faker()
-    folder_name = f.name().split()[0]
-    temp_zip_path = f"{folder_name}.zip"
-
+    folder_name = f.name()
+    temp_zip_path = f"folder_name.zip"
     with open(temp_zip_path, "wb") as temp_zip_file:
         content = await file.read()
         temp_zip_file.write(content)
+    zip_filename = gen_segmentations(temp_zip_path, 'folder_name', file.filename)
+    upload_to_gcp(zip_filename, 'masked-images')
+    return FileResponse(path=zip_filename, media_type='application/zip', filename=zip_filename)
 
-    with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
-        zip_ref.extractall(folder_name)
-    os.remove(temp_zip_path)
+
+def gen_segmentations(file, folder_name, endpoint_filename):
+    upload_to_gcp(file, 'images')
+    shutil.unpack_archive(file, folder_name, 'zip')
+    logging.info('input file', file)
+    logging.info('input folder name', folder_name)
+    logging.info('input filename', endpoint_filename)
 
     transform = transforms.Compose([
         transforms.Resize(224),
@@ -235,11 +261,18 @@ async def image_segmentation(file: UploadFile = File(...), token: str = Depends(
     model = model.to(device)
 
     output_dir = f"{folder_name}_output"
-    os.mkdir(output_dir)
-    data2predict = BrainDataset(root_dir, folder_name, transform=transform)
+    try:
+        os.mkdir(output_dir)
+    except FileExistsError:
+        shutil.rmtree(output_dir)
+        os.mkdir(output_dir)
+    file = os.path.basename(file)
+    data2predict = ProdBrainDataset(root_dir, f"{folder_name}/{''.join(endpoint_filename.split('.')[:-1])}",
+                                    transform=transform)
     pred_loader = DataLoader(data2predict, batch_size=1, shuffle=False)
-
-    for i, (data, filename) in enumerate(pred_loader):
+    filenames = data2predict.img_files
+    for i, data in enumerate(pred_loader):
+        filename = filenames[i]
         data = data.to(device)
         pred_logits = model(data)
         pred_binary = (pred_logits > 0.5).float()
@@ -247,13 +280,19 @@ async def image_segmentation(file: UploadFile = File(...), token: str = Depends(
         original_size = data2predict.get_original_size(i)
         mask_resized = cv2.resize(mask, (original_size[1], original_size[0]))
 
-        mask_filename = os.path.basename(filename[0])
+        mask_filename = os.path.basename(filename)
         output_mask_path = os.path.join(output_dir, mask_filename)
 
         mask_resized = (mask_resized * 255).astype(np.uint8)
         cv2.imwrite(output_mask_path, mask_resized)
-    output_zip = f'segmented_{''.join(file.filename.split('.')[:-1])}_images.zip'
-    shutil.make_archive(output_dir, output_zip)
+        filename_input = '.'.join(endpoint_filename.split('.')[:-1])
+        logging.info(f"{folder_name}/{filename_input}/{filename}")
 
-    zip_filename = output_zip
-    return FileResponse(zip_filename, media_type='application/zip', filename=zip_filename)
+        cv2.imwrite(output_mask_path, draw_mask_border(f"{folder_name}/{filename_input}/{filename}", output_mask_path))
+    output_zip = f"segmented_{''.join(endpoint_filename.split('.')[:-1])}_images"
+    shutil.make_archive(output_zip, 'zip', output_dir)
+    shutil.rmtree(output_dir)
+    shutil.rmtree(folder_name)
+    return f"{output_zip}.zip"
+
+# gen_segmentations('images/prod.zip', 'folder')
