@@ -228,7 +228,7 @@ async def data_drift_and_test(token: str = Depends(oauth2_scheme)):
 async def image_segmentation(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
     decode_token(token)
     folder_name = str(datetime.now().strftime("%y-%m-%d_%H-%M-%S"))
-    temp_zip_path = f"{folder_name}_{file.filename}.zip"
+    temp_zip_path = f"{folder_name}_{file.filename}"
     with open(temp_zip_path, "wb") as temp_zip_file:
         content = await file.read()
         temp_zip_file.write(content)
@@ -260,8 +260,12 @@ def gen_segmentations(file, folder_name, endpoint_filename):
     except FileExistsError:
         shutil.rmtree(output_dir)
         os.mkdir(output_dir)
-    file = os.path.basename(file)
-    data2predict = ProdBrainDataset(root_dir, f"{folder_name}/{endpoint_filename}",
+    try:
+        for ext_file in os.listdir(f"{folder_name}/{endpoint_filename}"):
+            shutil.move(f"{folder_name}/{endpoint_filename}/{ext_file}", f"{folder_name}/{ext_file}")
+    except FileNotFoundError:
+        pass
+    data2predict = ProdBrainDataset(root_dir, f"{folder_name}",
                                     transform=transform)
     pred_loader = DataLoader(data2predict, batch_size=1, shuffle=False)
     filenames = data2predict.img_files
@@ -280,7 +284,7 @@ def gen_segmentations(file, folder_name, endpoint_filename):
         mask_resized = (mask_resized * 255).astype(np.uint8)
         cv2.imwrite(output_mask_path, mask_resized)
 
-        cv2.imwrite(output_mask_path, draw_mask_border(f"{folder_name}/{endpoint_filename}/{filename}", output_mask_path))
+        cv2.imwrite(output_mask_path, draw_mask_border(f"{folder_name}/{filename}", output_mask_path))
     output_zip = f"{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}segmented_{endpoint_filename}_images"
     shutil.make_archive(output_zip, 'zip', output_dir)
     shutil.rmtree(output_dir)
