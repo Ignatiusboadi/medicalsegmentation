@@ -10,9 +10,8 @@ from passlib.context import CryptContext
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-import logging
 import cv2
-import faker
+from datetime import datetime
 import os
 import zipfile
 import json
@@ -57,8 +56,6 @@ def upload_to_gcp(source_file_name, destination_folder):
 
 
 def draw_mask_border(image, mask_generated):
-    print('image before', image)
-    logging.info('image before', image)
     image = cv2.imread(image)
     mask_generated = cv2.imread(mask_generated)
     if len(mask_generated.shape) == 3:
@@ -68,7 +65,6 @@ def draw_mask_border(image, mask_generated):
 
     _, binary_mask = cv2.threshold(gray_mask, 1, 255, cv2.THRESH_BINARY)
     contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    print('image', image)
     bordered_image = image.copy()
     cv2.drawContours(bordered_image, contours, -1, (0, 0, 255), 2)
 
@@ -231,23 +227,21 @@ async def data_drift_and_test(token: str = Depends(oauth2_scheme)):
 @app.post("/prediction")
 async def image_segmentation(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
     decode_token(token)
-    f = faker.Faker()
-    folder_name = f.name()
-    temp_zip_path = f"folder_name.zip"
+    folder_name = str(datetime.now().strftime("%y-%m-%d_%H-%M-%S"))
+    temp_zip_path = f"{folder_name}_{file.filename}.zip"
     with open(temp_zip_path, "wb") as temp_zip_file:
         content = await file.read()
         temp_zip_file.write(content)
-    zip_filename = gen_segmentations(temp_zip_path, 'folder_name', file.filename)
-    upload_to_gcp(zip_filename, 'masked-images')
+    endpoint_filename = '.'.join(file.filename.split('.')[:-1])
+    zip_filename = gen_segmentations(temp_zip_path, folder_name, endpoint_filename)
+    upload_to_gcp(zip_filename, 'segmented-images')
     return FileResponse(path=zip_filename, media_type='application/zip', filename=zip_filename)
 
 
 def gen_segmentations(file, folder_name, endpoint_filename):
-    upload_to_gcp(file, 'images')
     shutil.unpack_archive(file, folder_name, 'zip')
-    logging.info('input file', file)
-    logging.info('input folder name', folder_name)
-    logging.info('input filename', endpoint_filename)
+    upload_to_gcp(file, 'images')
+    os.remove(file)
 
     transform = transforms.Compose([
         transforms.Resize(224),
@@ -267,7 +261,7 @@ def gen_segmentations(file, folder_name, endpoint_filename):
         shutil.rmtree(output_dir)
         os.mkdir(output_dir)
     file = os.path.basename(file)
-    data2predict = ProdBrainDataset(root_dir, f"{folder_name}/{''.join(endpoint_filename.split('.')[:-1])}",
+    data2predict = ProdBrainDataset(root_dir, f"{folder_name}/{endpoint_filename}",
                                     transform=transform)
     pred_loader = DataLoader(data2predict, batch_size=1, shuffle=False)
     filenames = data2predict.img_files
@@ -285,14 +279,10 @@ def gen_segmentations(file, folder_name, endpoint_filename):
 
         mask_resized = (mask_resized * 255).astype(np.uint8)
         cv2.imwrite(output_mask_path, mask_resized)
-        filename_input = '.'.join(endpoint_filename.split('.')[:-1])
-        logging.info(f"{folder_name}/{filename_input}/{filename}")
 
-        cv2.imwrite(output_mask_path, draw_mask_border(f"{folder_name}/{filename_input}/{filename}", output_mask_path))
-    output_zip = f"segmented_{''.join(endpoint_filename.split('.')[:-1])}_images"
+        cv2.imwrite(output_mask_path, draw_mask_border(f"{folder_name}/{endpoint_filename}/{filename}", output_mask_path))
+    output_zip = f"{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}segmented_{endpoint_filename}_images"
     shutil.make_archive(output_zip, 'zip', output_dir)
     shutil.rmtree(output_dir)
     shutil.rmtree(folder_name)
     return f"{output_zip}.zip"
-
-# gen_segmentations('images/prod.zip', 'folder')
