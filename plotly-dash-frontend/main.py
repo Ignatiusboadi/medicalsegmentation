@@ -1,17 +1,17 @@
-import uuid
-import dash
-import requests
-from dash import dcc, html, Input, Output, State, callback, dcc, ctx
 from app import api_url
-import dash_bootstrap_components as dbc
-import os
-import zipfile
-import io
-import base64
-import shutil
-
+from dash import html, Input, Output, callback, dcc
 from dash.exceptions import PreventUpdate
-from flask import send_file
+import base64
+import dash_bootstrap_components as dbc
+import io
+import os
+import requests
+import shutil
+import uuid
+import zipfile
+
+upload_message = 'Multiple file uploads are allowed. Please place all scans in a folder, select all files, and upload them together.'
+UPLOAD_DIRECTORY = 'uploads'
 
 
 def create_zip(file_data_list, filenames):
@@ -23,9 +23,6 @@ def create_zip(file_data_list, filenames):
     memory_file.seek(0)
     return memory_file
 
-
-upload_message = 'Multiple file uploads are allowed. Please place all scans in a folder, select all files, and upload them together.'
-UPLOAD_DIRECTORY = 'uploads'
 
 layout = html.Div(style={'padding-top': '30px', 'background-image': 'url("/assets/brain_imag_bg.webp"',
                          'height': '100vh'}, children=[
@@ -136,7 +133,6 @@ def segment_images(file_names, file_contents, bearer_token, n_clicks):
     file_name = content_disp.split('filename=')[1].strip('"')
 
     return dcc.send_bytes(file_content, file_name), 0
-
 
 # @callback(Output('url', 'pathname'),
 #           Output('token', 'data'),

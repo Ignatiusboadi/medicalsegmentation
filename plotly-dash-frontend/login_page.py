@@ -1,8 +1,8 @@
 from dash import dcc, html, Input, Output, State, callback
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
-import requests
 import datetime
+import requests
 
 email_n = "Once the loading screen finishes, please check your email for a token. Enter the token below and click 'Authenticate'."
 
