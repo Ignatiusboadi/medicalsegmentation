@@ -19,9 +19,7 @@ dagshub~=0.3.37
 pillow~=10.3.0
 torchvision~=0.19.1 #+cu118
 tqdm~=4.66.5
-
 segmentation_models_pytorch
-
 Faker~=30.1.0
 yagmail~=0.15.293
 matplotlib~=3.9.2

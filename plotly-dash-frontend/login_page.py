@@ -64,7 +64,7 @@ layout = html.Div(style={'background-color': 'GhostWhite', 'height': '100vh', 'p
     Input('token-btn', 'n_clicks'),
     State('username-input', 'value'),
     State('password-input', 'value'),
-    config_prevent_initial_callbacks=True
+    config_prevent_initial_callbacks=True,
 )
 def generate_token(n_clicks, username, password):
     if not n_clicks or username is None or password is None:

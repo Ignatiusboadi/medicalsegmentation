@@ -73,10 +73,13 @@ layout = html.Div(style={'padding-top': '30px', 'background-image': 'url("/asset
 @callback(Output('url', 'pathname'),
           Output('token', 'data'),
           Output('logout', 'n_clicks'),
-          Input('logout', 'n_clicks'))
+          Input('logout', 'n_clicks'),
+          config_prevent_initial_callbacks=True)
 def log_out(n_clicks):
+    print(n_clicks, 'logout checked')
     if n_clicks is None:
         raise PreventUpdate
+    print(n_clicks, 'logout clicked')
     if n_clicks:
         return '/', None, None
 
@@ -122,9 +125,9 @@ def segment_images(file_names, file_contents, bearer_token, n_clicks):
                     "file": (zip_filename, zip_file, "application/zip")
                 }
                 response = requests.post(segment_api, headers=headers, files=files)
-                print('about to remove')
-                os.remove(zip_filename)
-                print('removed')
+                # print('about to remove')
+                # os.remove(zip_filename)
+                # print('removed')
         except FileNotFoundError:
             return f"Error: The file {zip_filename} does not exist."
     file_content = response.content
@@ -133,6 +136,17 @@ def segment_images(file_names, file_contents, bearer_token, n_clicks):
     file_name = content_disp.split('filename=')[1].strip('"')
 
     return dcc.send_bytes(file_content, file_name), 0
+
+
+# @callback(Output('url', 'pathname'),
+#           Output('token', 'data'),
+#           Output('logout', 'n_clicks'),
+#           Input('logout', 'n_clicks'))
+# def log_out(n_clicks):
+#     if n_clicks is None:
+#         raise PreventUpdate
+#     if n_clicks:
+#         return '/', None, None
 
 
 # if __name__ == '__main__':
