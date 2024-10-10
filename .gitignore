@@ -14,6 +14,6 @@ __pycache__/
 /fast-api-backend/valid_annotations.coco.json
 /fast-api-backend/models
 /fast-api-backend/mlruns
-/fast-api-backend/.dvc
+/.dvc
 /fast-api-backend/focus-surfer-435213-g6.json
 /plotly-dash-frontend/focus-surfer-435213-g6.json
