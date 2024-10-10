@@ -1,5 +1,5 @@
 from app import api_url
-from dash import html, Input, Output, callback, dcc
+from dash import html, Input, Output, callback, dcc, State, ctx
 from dash.exceptions import PreventUpdate
 import base64
 import dash_bootstrap_components as dbc
@@ -49,7 +49,11 @@ layout = html.Div(style={'padding-top': '30px', 'background-image': 'url("/asset
                                                   'lineHeight': '60px', 'borderWidth': '1px',
                                                   'borderStyle': 'dashed', 'borderRadius': '5px',
                                                   'textAlign': 'center',
-                                                  'font-family': 'Lucida Console'}), ])]),
+                                                  'font-family': 'Lucida Console'}),
+                                html.Em(id='num_uploads', children='You have uploaded no file',
+                                        style={'font-family': 'Lucida Console', 'text-color': 'green',
+                                               'textAlign': 'center'}),
+                            ])]),
                         html.Br(),
                         html.Em(upload_message, style={'color': 'green'}),
                         html.Br(),
@@ -67,17 +71,30 @@ layout = html.Div(style={'padding-top': '30px', 'background-image': 'url("/asset
     ], fluid=True)])
 
 
+@callback(Output('num_uploads', 'children'),
+          Input('upload-files', 'contents'),
+          State('upload-files', 'filename'))
+def count_uploads(file_contents, file_names):
+    if file_contents is None:
+        return 'You have uploaded no file'
+
+    num_files = len(file_names)
+    if num_files == 1:
+        return f"You have uploaded {num_files} file. Click 'Segment files' to proceed and download segmented images."
+    else:
+        return f"You have uploaded {num_files} files. Click 'Segment files' to proceed and download segmented images."
+
+
 @callback(Output('url', 'pathname'),
           Output('token', 'data'),
           Output('logout', 'n_clicks'),
           Input('logout', 'n_clicks'),
           config_prevent_initial_callbacks=True)
 def log_out(n_clicks):
-    print(n_clicks, 'logout checked')
     if n_clicks is None:
         raise PreventUpdate
     print(n_clicks, 'logout clicked')
-    if n_clicks:
+    if n_clicks and ctx.triggered_id == 'logout':
         return '/', None, None
 
 
@@ -109,7 +126,6 @@ def segment_images(file_names, file_contents, bearer_token, n_clicks):
                 f.write(decoded_file)
 
         zip_filename = f"{folder_name}.zip"
-        zip_filepath = os.path.join(UPLOAD_DIRECTORY, zip_filename)
 
         with zipfile.ZipFile(zip_filename, 'w') as zf:
             for file_name in file_names:
@@ -122,27 +138,13 @@ def segment_images(file_names, file_contents, bearer_token, n_clicks):
                     "file": (zip_filename, zip_file, "application/zip")
                 }
                 response = requests.post(segment_api, headers=headers, files=files)
-                # print('about to remove')
-                # os.remove(zip_filename)
-                # print('removed')
         except FileNotFoundError:
             return f"Error: The file {zip_filename} does not exist."
-    file_content = response.content
-    print(response.headers)
-    content_disp = response.headers.get('Content-Disposition')
-    file_name = content_disp.split('filename=')[1].strip('"')
-
-    return dcc.send_bytes(file_content, file_name), 0
-
-# @callback(Output('url', 'pathname'),
-#           Output('token', 'data'),
-#           Output('logout', 'n_clicks'),
-#           Input('logout', 'n_clicks'))
-# def log_out(n_clicks):
-#     if n_clicks is None:
-#         raise PreventUpdate
-#     if n_clicks:
-#         return '/', None, None
+        file_content = response.content
+        content_disp = response.headers.get('Content-Disposition')
+        file_name = content_disp.split('filename=')[1].strip('"')
+        os.remove(zip_filename)
+        return dcc.send_bytes(file_content, file_name), 0
 
 
 # if __name__ == '__main__':
