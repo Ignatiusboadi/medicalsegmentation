@@ -16,10 +16,13 @@ layout = html.Div(style={'height': '100vh', 'padding-bottom': '100px',
                                              'font-size': '200%'}), ], )], justify='center'),
                       dbc.Container(style={'padding-top': '100px'}, children=[
                           dbc.Row(children=[
-                              dbc.Col(html.H2("Login", className="text-center mb-4"), width=12)]),
+                              dbc.Col(html.H2("Login", className="text-center mb-4",
+                                              style={'textAlign': 'center', 'font-weight': 'bold', 'color': 'red'}),
+                                      width=12)]),
                           dbc.Row(children=[
                               dbc.Col(children=[
                                   dbc.Card([
+                                      # html.H2("Login", className="text-center mb-4"),
                                       dbc.CardBody(style={'background-color': 'GhostWhite'}, children=[
                                           dbc.Label("Username:", html_for="username-input"),
                                           dcc.Input(id='username-input', type='text', placeholder='Enter Username',
