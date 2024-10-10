@@ -272,13 +272,16 @@ async def data_drift_and_test(token: str = Depends(oauth2_scheme)):
 
 @app.post("/prediction")
 async def image_segmentation(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
-    decode_token(token)
-    folder_name = str(datetime.now().strftime("%y-%m-%d_%H-%M-%S"))
-    temp_zip_path = f"{folder_name}_{file.filename}"
-    with open(temp_zip_path, "wb") as temp_zip_file:
-        content = await file.read()
-        temp_zip_file.write(content)
-    endpoint_filename = '.'.join(file.filename.split('.')[:-1])
-    zip_filename = gen_segmentations(temp_zip_path, folder_name, endpoint_filename)
-    upload_to_gcp(zip_filename, 'segmented-images')
-    return FileResponse(path=zip_filename, media_type='application/zip', filename=zip_filename)
+    try:
+        decode_token(token)
+        folder_name = str(datetime.now().strftime("%y-%m-%d_%H-%M-%S"))
+        temp_zip_path = f"{folder_name}_{file.filename}"
+        with open(temp_zip_path, "wb") as temp_zip_file:
+            content = await file.read()
+            temp_zip_file.write(content)
+        endpoint_filename = '.'.join(file.filename.split('.')[:-1])
+        zip_filename = gen_segmentations(temp_zip_path, folder_name, endpoint_filename)
+        upload_to_gcp(zip_filename, 'segmented-images')
+        return FileResponse(path=zip_filename, media_type='application/zip', filename=zip_filename)
+    finally:
+        os.remove(zip_filename)

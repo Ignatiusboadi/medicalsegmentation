@@ -10,7 +10,7 @@ import shutil
 import uuid
 import zipfile
 
-upload_message = 'Multiple file uploads are allowed. Please place all scans in a folder, select all files, and upload them together.'
+upload_message = 'Multiple file uploads are allowed. Please place all scans in a folder, select all files, and upload them together. Files should be of type png, jpg or jpeg.'
 UPLOAD_DIRECTORY = 'uploads'
 
 
@@ -61,7 +61,8 @@ layout = html.Div(style={'padding-top': '30px', 'background-image': 'url("/asset
                             dbc.Button("Segment Scans", id='segment', color="danger", className='text-center',
                                        outline=True, size='md',
                                        style={'padding-left': '45px', 'padding-right': '45px'}),
-                            dcc.Loading(dcc.Download(id='download-btn'), fullscreen=True, )
+                            dcc.Loading(dcc.Download(id='download-btn'), fullscreen=True, ),
+                            html.Em(id='segment-output', ),
                         ],
                             width={'offset': 4}, style={'padding-left': '25px', 'padding-right': '25px'})],
                             justify="center"),
@@ -74,8 +75,10 @@ layout = html.Div(style={'padding-top': '30px', 'background-image': 'url("/asset
 @callback(Output('num_uploads', 'children'),
           Input('upload-files', 'contents'),
           State('upload-files', 'filename'))
-def count_uploads(file_contents, file_names):
-    if file_contents is None:
+def count_uploads(file_names):
+    if not file_names:
+        raise PreventUpdate
+    if file_names is None:
         return 'You have uploaded no file'
 
     num_files = len(file_names)
@@ -89,7 +92,7 @@ def count_uploads(file_contents, file_names):
           Output('token', 'data'),
           Output('logout', 'n_clicks'),
           Input('logout', 'n_clicks'),
-          config_prevent_initial_callbacks=True)
+          prevent_initial_callback=True)
 def log_out(n_clicks):
     if n_clicks is None:
         raise PreventUpdate
@@ -100,51 +103,63 @@ def log_out(n_clicks):
 
 @callback(Output('download-btn', 'data'),
           Output('segment', 'n_clicks'),
+          Output('segment-output', 'children'),
           Input('upload-files', 'filename'),
           Input('upload-files', 'contents'),
           Input('token', 'data'),
           Input('segment', 'n_clicks'))
 def segment_images(file_names, file_contents, bearer_token, n_clicks):
-    if not n_clicks:
+    if not n_clicks or file_contents is None or file_names is None:
         raise PreventUpdate
     headers = {
         'Authorization': f"Bearer {bearer_token}"
     }
     segment_api = f"{api_url}/prediction"
-    if n_clicks > 0 and file_contents is not None:
-        folder_name = str(uuid.uuid4())
-        folder_path = os.path.join(UPLOAD_DIRECTORY, folder_name)
+    try:
+        if n_clicks > 0 and file_contents is not None:
+            folder_name = str(uuid.uuid4())
+            folder_path = os.path.join(UPLOAD_DIRECTORY, folder_name)
 
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
 
-        for i, content in enumerate(file_contents):
-            content_type, content_string = content.split(',')
-            decoded_file = base64.b64decode(content_string)
+            for i, content in enumerate(file_contents):
+                content_type, content_string = content.split(',')
+                decoded_file = base64.b64decode(content_string)
 
-            with open(os.path.join(folder_path, file_names[i]), 'wb') as f:
-                f.write(decoded_file)
+                with open(os.path.join(folder_path, file_names[i]), 'wb') as f:
+                    f.write(decoded_file)
 
-        zip_filename = f"{folder_name}.zip"
+            zip_filename = f"{folder_name}.zip"
 
-        with zipfile.ZipFile(zip_filename, 'w') as zf:
-            for file_name in file_names:
-                zf.write(os.path.join(folder_path, file_name), file_name)
-        shutil.rmtree(folder_path)
+            with zipfile.ZipFile(zip_filename, 'w') as zf:
+                for file_name in file_names:
+                    zf.write(os.path.join(folder_path, file_name), file_name)
+            shutil.rmtree(folder_path)
 
-        try:
-            with open(zip_filename, "rb") as zip_file:
-                files = {
-                    "file": (zip_filename, zip_file, "application/zip")
-                }
-                response = requests.post(segment_api, headers=headers, files=files)
-        except FileNotFoundError:
-            return f"Error: The file {zip_filename} does not exist."
-        file_content = response.content
-        content_disp = response.headers.get('Content-Disposition')
-        file_name = content_disp.split('filename=')[1].strip('"')
-        os.remove(zip_filename)
-        return dcc.send_bytes(file_content, file_name), 0
+            try:
+                with open(zip_filename, "rb") as zip_file:
+                    files = {
+                        "file": (zip_filename, zip_file, "application/zip")
+                    }
+                    response = requests.post(segment_api, headers=headers, files=files)
+            except FileNotFoundError:
+                return None, 0, f"Error: The file {zip_filename} does not exist."
+            except Exception as e:
+                return None, 0, f"There is an error: kindly check your internet connection and/or the file type uploaded."
+
+            file_content = response.content
+            content_disp = response.headers.get('Content-Disposition')
+            file_name = content_disp.split('filename=')[1].strip('"')
+            os.remove(zip_filename)
+            return dcc.send_bytes(file_content, file_name), 0
+        elif file_contents is None:
+            return None, 0, 'No file uploaded. Upload a file(s) and try again.'
+    finally:
+        if os.path.exists(folder_path):
+            shutil.rmtree(folder_path)
+        if os.path.exists(zip_filename):
+            os.remove(zip_filename)
 
 
 # if __name__ == '__main__':

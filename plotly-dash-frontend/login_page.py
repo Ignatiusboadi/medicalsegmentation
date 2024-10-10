@@ -7,7 +7,7 @@ import requests
 email_n = "Once the loading screen finishes, please check your email for a token. Enter the token below and click 'Authenticate'."
 
 # Layout for login page
-layout = html.Div(style={'background-color': 'GhostWhite', 'height': '100vh', 'padding-bottom': '100px',
+layout = html.Div(style={'height': '100vh', 'padding-bottom': '100px',
                          'padding-top': '50px', 'background-image': 'url("/assets/brain_imag_bg.webp"'},
                   children=[
                       dbc.Row(children=[
