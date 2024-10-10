@@ -169,8 +169,8 @@ def segment_images(file_names, file_contents, bearer_token, n_clicks):
             shutil.rmtree(folder_path)
         if os.path.exists(zip_filename):
             os.remove(zip_filename)
-        if os.path.exists(fast_api_zip):
-            os.remove(fast_api_zip)
+        # if os.path.exists(fast_api_zip):
+        #     os.remove(fast_api_zip)
 
 
 # if __name__ == '__main__':
