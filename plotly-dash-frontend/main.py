@@ -75,7 +75,7 @@ layout = html.Div(style={'padding-top': '30px', 'background-image': 'url("/asset
 @callback(Output('num_uploads', 'children'),
           Input('upload-files', 'contents'),
           State('upload-files', 'filename'))
-def count_uploads(file_names):
+def count_uploads(contents, file_names):
     if not file_names:
         raise PreventUpdate
     if file_names is None:
