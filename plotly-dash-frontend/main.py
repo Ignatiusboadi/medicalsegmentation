@@ -11,6 +11,7 @@ import uuid
 import zipfile
 
 upload_message = 'Multiple file uploads are allowed. Please place all scans in a folder, select all files, and upload them together. Files should be of type png, jpg or jpeg.'
+seg_success_msg = "Segmentation successful. Output files downloaded and saved as 'segmented scans.zip'."
 UPLOAD_DIRECTORY = 'uploads'
 
 
@@ -26,10 +27,14 @@ def create_zip(file_data_list, filenames):
 
 layout = html.Div(style={'padding-top': '30px', 'background-image': 'url("/assets/brain_imag_bg.webp"',
                          'height': '100vh'}, children=[
+dcc.ConfirmDialog(
+                id='segment_output', submit_n_clicks=0,
+                message='Segmentation successful. Output files downloaded.',
+            ),
     dbc.Row(children=[
         dbc.Col(children=[
             html.H2("Brain Image Tumor Segmentation", className="text-center mb-4",
-                    style={'textAlign': 'center', 'font-weight': 'bold', 'color': '#3B1C0A', 'padding-top': '10px',
+                    style={'textAlign': 'center', 'font-weight': 'bold', 'color': 'red', 'padding-top': '10px',
                            'font-size': '200%'}),
         ], width=11),
         dbc.Col(dbc.Button(id='logout', children='Logout', n_clicks=None))], justify='center'),
@@ -50,25 +55,27 @@ layout = html.Div(style={'padding-top': '30px', 'background-image': 'url("/asset
                                                   'borderStyle': 'dashed', 'borderRadius': '5px',
                                                   'textAlign': 'center',
                                                   'font-family': 'Lucida Console'}),
-                                html.Em(id='num_uploads', children='You have uploaded no file',
-                                        style={'font-family': 'Lucida Console', 'text-color': 'green',
-                                               'textAlign': 'center'}),
+                        html.Em(upload_message, style={'color': '#1d3557', 'padding-top': '15px',
+                                                       'padding-bottom': '15px'}),
                             ])]),
                         html.Br(),
-                        html.Em(upload_message, style={'color': 'green'}),
+                        html.Em(id='num_uploads', children='You have uploaded no file',
+                                style={'font-family': 'Lucida Console', 'text-color': 'red', 'textAlign': 'center'}),
+                        html.Br(),
                         html.Br(),
                         dbc.Row(children=[dbc.Col(children=[
                             dbc.Button("Segment Scans", id='segment', color="danger", className='text-center',
                                        outline=True, size='md',
-                                       style={'padding-left': '45px', 'padding-right': '45px'}),
+                                       style={'padding-left': '45px', 'padding-right': '45px', }),
                             dcc.Loading(dcc.Download(id='download-btn'), fullscreen=True, ),
-                            html.Em(id='segment-output', ),
+                            html.Br(),
                         ],
-                            width={'offset': 4}, style={'padding-left': '25px', 'padding-right': '25px'})],
+                            width={'offset': 4}, style={'padding-left': '25px', 'padding-right': '15px',
+                                                        'padding-top': '10px', 'padding-bottom': '10px'})],
                             justify="center"),
                     ], ),
                 ], ),
-            ], width={'size': 6, 'offset': 3})], style={'padding-bottom': '50px'}),
+            ], width={'size': 6, 'offset': 3})]),
     ], fluid=True)])
 
 
@@ -103,7 +110,8 @@ def log_out(n_clicks):
 
 @callback(Output('download-btn', 'data'),
           Output('segment', 'n_clicks'),
-          Output('segment-output', 'children'),
+          Output('segment_output', 'message'),
+          Output('segment_output', 'displayed'),
           Input('upload-files', 'filename'),
           Input('upload-files', 'contents'),
           Input('token', 'data'),
@@ -144,22 +152,25 @@ def segment_images(file_names, file_contents, bearer_token, n_clicks):
                     }
                     response = requests.post(segment_api, headers=headers, files=files)
             except FileNotFoundError:
-                return None, 0, f"Error: The file {zip_filename} does not exist."
+                return None, 0, f"Error: The file {zip_filename} does not exist.", True
             except Exception as e:
-                return None, 0, f"There is an error: kindly check your internet connection and/or the file type uploaded."
+                return None, 0, f"There is an error: kindly check your internet connection and/or the file type uploaded.", True
 
             file_content = response.content
             content_disp = response.headers.get('Content-Disposition')
-            file_name = content_disp.split('filename=')[1].strip('"')
+            fast_api_zip = content_disp.split('filename=')[1].strip('"')
+            file_name = 'segmented scans.zip'
             os.remove(zip_filename)
-            return dcc.send_bytes(file_content, file_name), 0
+            return dcc.send_bytes(file_content, file_name), 0, seg_success_msg,  True
         elif file_contents is None:
-            return None, 0, 'No file uploaded. Upload a file(s) and try again.'
+            return None, 0, 'No file uploaded. Upload a file(s) and try again.', True
     finally:
         if os.path.exists(folder_path):
             shutil.rmtree(folder_path)
         if os.path.exists(zip_filename):
             os.remove(zip_filename)
+        if os.path.exists(fast_api_zip):
+            os.remove(fast_api_zip)
 
 
 # if __name__ == '__main__':
