@@ -1,5 +1,5 @@
 outs:
-- md5: 04191e8322dea4ed7fc56c2a44a3c560
-  size: 142
+- md5: 3142f6c9ddeb0714b4ad7b3df65febe1
+  size: 149
   hash: md5
   path: .dvcignore

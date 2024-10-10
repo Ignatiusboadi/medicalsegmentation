@@ -33,7 +33,7 @@ dcc.ConfirmDialog(
             ),
     dbc.Row(children=[
         dbc.Col(children=[
-            html.H2("Brain Image Tumor Segmentation", className="text-center mb-4",
+            html.H2("BRAIN IMAGE TUMOR SEGMENTATION", className="text-center mb-4",
                     style={'textAlign': 'center', 'font-weight': 'bold', 'color': 'red', 'padding-top': '10px',
                            'font-size': '200%'}),
         ], width=11),
