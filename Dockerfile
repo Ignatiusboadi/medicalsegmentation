@@ -1,27 +1,23 @@
+
 FROM python:3.11.5
 
-# RUN apt-get update && apt-get install -y \
-#     cmake \
-#     build-essential \
-#     libopenblas-dev \
-#     liblapack-dev \
-#     libx11-dev \
-#     libgtk-3-dev \
-#     libboost-python-dev
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
 WORKDIR /code
 
-# Copy the requirements to the working directory
 COPY ./requirements.txt /code/requirements.txt
 
-# Install dependencies
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-# Copy the app directory contents to the working directory
-COPY ./main.py /code/main.py
+COPY ./fast-api-backend /code/fast-api-backend
+COPY ./plotly-dash-frontend /code/plotly-dash-frontend
 
 EXPOSE 8000
+EXPOSE 8051
 
-# Run the FastAPI application using Uvicorn
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+CMD bash -c "uvicorn fast-api-backend.main:app --host 0.0.0.0 --port 8000 & python /code/plotly-dash-frontend/index.py"
