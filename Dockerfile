@@ -21,3 +21,5 @@ EXPOSE 8051
 # ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 CMD bash -c "uvicorn fast-api-backend.main:app --host 0.0.0.0 --port 8000 & python /code/plotly-dash-frontend/index.py"
+
+
