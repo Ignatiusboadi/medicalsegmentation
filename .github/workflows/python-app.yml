@@ -37,19 +37,20 @@ jobs:
           pip install dvc[gs]  # Install DVC with Google Cloud Storage support
 
       # Authenticate with Google Cloud using the service account key
-      - name: Set up Google Cloud credentials
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-        run: |
-          echo $GOOGLE_APPLICATION_CREDENTIALS > /tmp/gcloud-service-key.json
-          gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
-          gcloud config set project image-segmentation-438322
+      # - name: Set up Google Cloud credentials
+      #   env:
+      #     GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+      #   run: |
+      #     echo $GOOGLE_APPLICATION_CREDENTIALS > /tmp/gcloud-service-key.json
+      #     gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
+      #     gcloud config set project image-segmentation-438322
           
-      # -  name: 'Authenticate to Google Cloud'
-      #    id: 'auth'
-      #    uses: 'google-github-actions/auth@v4'
-      #    with:
-      #     credentials_json: '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS}}'
+      - name: 'Authenticate to Google Cloud'
+        id: 'auth'
+        uses: 'google-github-actions/auth@v4'
+        with:
+          credentials_json: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+
 
       # -  name: 'Docker Auth'
       #    run: |-
