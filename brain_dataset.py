@@ -69,5 +69,5 @@ class BrainDataset(ProdBrainDataset):
                 mask = self.transform(mask)
             return img_gray, mask
     
-        return img_gray, None
+        return img_gray, torch.zeros_like(img_gray)#None
 
