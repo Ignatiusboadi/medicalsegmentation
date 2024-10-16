@@ -261,7 +261,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 #######################################################################################
 #DATA DRIFT DETECTION
 #######################################################################################
-@app.post("/Drift Monitoring")
+@app.post("/get_drift_report")
 async def data_drift_and_test(token: str = Depends(oauth2_scheme)):
     decode_token(token)
     train_json = 'train_annotations.coco.json'
