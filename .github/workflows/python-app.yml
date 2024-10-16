@@ -122,20 +122,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install dvc[gs]  # Install DVC with Google Cloud Storage support
 
-      # Authenticate with Google Cloud using the service account key
-      - name: Set up Google Cloud credentials
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-        run: |
-          echo $GOOGLE_APPLICATION_CREDENTIALS > /tmp/gcloud-service-key.json
-          gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
-          gcloud config set project ${{ env.PROJECT_ID }}  # Use project ID from env
-     
+      # Authenticate with Google Cloud
+      - name: 'Authenticate to Google Cloud'
+        id: 'auth'
+        uses: 'google-github-actions/auth@v4'
+        with:
+          credentials_json: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+
       # Perform DVC fetch and pull
       - name: DVC Fetch and Pull
         run: |
           dvc remote list
-          dvc remote modify brain_remote credentialpath /tmp/gcloud-service-key.json
           dvc pull -v -f
 
       # Build and push Docker container
@@ -156,7 +153,3 @@ jobs:
       # Show output URL (if Cloud Run deployment is uncommented)
       # - name: 'Show output'
       #   run: echo "Deployed at URL: ${{ steps.deploy.outputs.url }}"
-
-     
-#       - name: 'Show output'
-#         run: echo ${{ steps.deploy.outputs.url }}
