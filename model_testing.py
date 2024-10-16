@@ -9,7 +9,10 @@ from torchvision import transforms
 import segmentation_models_pytorch as smp
 from brain_dataset import BrainDataset
 
-device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+# device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 
 # Define transforms for the dataset
 def clamp_tensor(x):
@@ -43,7 +46,7 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_w
 # Load model
 model = smp.Unet(encoder_name="resnet50", encoder_weights='imagenet', in_channels=1, classes=1).to(device)
 model_path = "models/best_model.pth"
-model.load_state_dict(torch.load(model_path))
+model.load_state_dict(torch.load(model_path, map_location=device))
 
 # Ensure the directory exists for saving outputs
 def create_output_dir(output_dir):
