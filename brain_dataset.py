@@ -38,35 +38,36 @@ class BrainDataset(ProdBrainDataset):
         if mask_dir:
             self.mask_files = [f for f in os.listdir(self.mask_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
 
-    # def __getitem__(self, idx):
-    #     img_gray = super().__getitem__(idx)
 
+    # def __getitem__(self, idx):
+    
+    #     img_gray = super().__getitem__(idx)
     #     if self.mask_dir:
+            
+    #         if idx >= len(self.mask_files):
+    #             raise IndexError(f"Index {idx} is out of range for mask_files with length {len(self.mask_files)}.")
     #         mask_name = self.mask_files[idx]
     #         mask_path = os.path.join(self.mask_dir, mask_name)
+    #         if not os.path.exists(mask_path):
+    #             raise FileNotFoundError(f"Mask file '{mask_path}' does not exist.")
     #         mask = Image.open(mask_path).convert('L')
-
     #         if self.transform:
     #             mask = self.transform(mask)
     #         return img_gray, mask
-
     #     return img_gray, None
 
     def __getitem__(self, idx):
+    img_gray = super().__getitem__(idx)
     
-        img_gray = super().__getitem__(idx)
-        if self.mask_dir:
-            
-            if idx >= len(self.mask_files):
-                raise IndexError(f"Index {idx} is out of range for mask_files with length {len(self.mask_files)}.")
-            mask_name = self.mask_files[idx]
-            mask_path = os.path.join(self.mask_dir, mask_name)
-            if not os.path.exists(mask_path):
-                raise FileNotFoundError(f"Mask file '{mask_path}' does not exist.")
-            mask = Image.open(mask_path).convert('L')
-            if self.transform:
-                mask = self.transform(mask)
-            return img_gray, mask
-        return img_gray, None
+    if self.mask_dir and len(self.mask_files) > idx:
+        mask_name = self.mask_files[idx]
+        mask_path = os.path.join(self.mask_dir, mask_name)
+        if not os.path.exists(mask_path):
+            raise FileNotFoundError(f"Mask file '{mask_path}' does not exist.")
+        mask = Image.open(mask_path).convert('L')
+        if self.transform:
+            mask = self.transform(mask)
+        return img_gray, mask
 
+    return img_gray, None
 
