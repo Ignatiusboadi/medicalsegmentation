@@ -112,7 +112,28 @@ jobs:
       - name: 'Checkout'
         uses: 'actions/checkout@v4'
 
-  
+        # Set up Python to use DVC
+      - name: Set up Python
+        uses: actions/setup-python@v2
+
+        with:
+          python-version: '3.12'  # Specify the Python version required for your project
+
+            # Install DVC with GCS support
+      - name: Install DVC with GCS support
+        run: |
+          python -m pip install --upgrade pip
+          pip install dvc[gs]  # Install DVC with Google Cloud Storage support
+
+      # Authenticate with Google Cloud using the service account key
+      - name: Set up Google Cloud credentials
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+        run: |
+          echo $GOOGLE_APPLICATION_CREDENTIALS > /tmp/gcloud-service-key.json
+          gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
+          gcloud config set project focus-surfer-435213-g6
+
       -  name: 'Authenticate to Google Cloud'
          id: 'auth'
          uses: 'google-github-actions/auth@v2'
