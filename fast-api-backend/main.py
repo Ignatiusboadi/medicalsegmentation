@@ -1,4 +1,3 @@
-from brain_dataset import ProdBrainDataset
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from evidently.metrics import *
@@ -13,6 +12,8 @@ from fastapi.responses import FileResponse
 from google.cloud import storage
 from jwt import PyJWTError
 from passlib.context import CryptContext
+from PIL import Image
+from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from typing import Union
@@ -31,16 +32,10 @@ import warnings
 import yagmail
 import zipfile
 
+
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 load_dotenv()
-secret_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-secret_data = json.loads(secret_json)
-
-with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.json') as temp_cred_file:
-    json.dump(secret_data, temp_cred_file)
-    temp_cred_file.flush()
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = temp_cred_file.name
-
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 SECRET_KEY = "fdb3e44ba75f4d770ee8de98e488bc3ebcf64dc3066c8140a1ae620c30964454"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 45
@@ -63,6 +58,56 @@ root_dir = '/'
 os.makedirs(upload_dir, exist_ok=True)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
+class ProdBrainDataset(Dataset):
+    def __init__(self, root_dir, img_dir, transform=None):
+        self.root_dir = root_dir
+        self.transform = transform
+        self.img_dir = img_dir
+        self.img_files = [f for f in os.listdir(self.img_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
+
+    def __len__(self):
+        return len(self.img_files)
+
+    def __getitem__(self, idx):
+        img_name = self.img_files[idx]
+        img_path = os.path.join(self.img_dir, img_name)
+        img = Image.open(img_path).convert('RGB')
+        img_gray = img.convert('L')
+
+        if self.transform:
+            img_gray = self.transform(img_gray)
+
+        return img_gray
+
+    def get_original_size(self, idx):
+        img_name = self.img_files[idx]
+        img_path = os.path.join(self.img_dir, img_name)
+        img = Image.open(img_path)
+        return img.size
+
+
+class BrainDataset(ProdBrainDataset):
+    def __init__(self, root_dir, img_dir, mask_dir=None, transform=None):
+        super().__init__(root_dir, img_dir, transform)
+        self.mask_dir = mask_dir
+        if mask_dir:
+            self.mask_files = [f for f in os.listdir(self.mask_dir) if f.endswith(('.png', '.jpg', '.jpeg'))]
+
+    def __getitem__(self, idx):
+        img_gray = super().__getitem__(idx)
+
+        if self.mask_dir:
+            mask_name = self.mask_files[idx]
+            mask_path = os.path.join(self.mask_dir, mask_name)
+            mask = Image.open(mask_path).convert('L')
+
+            if self.transform:
+                mask = self.transform(mask)
+            return img_gray, mask
+
+        return img_gray, None
 
 
 def clamp_tensor(x):
@@ -142,7 +187,7 @@ def gen_segmentations(file, folder_name, endpoint_filename):
         cv2.imwrite(output_mask_path, mask_resized)
 
         cv2.imwrite(output_mask_path, draw_mask_border(f"{folder_name}/{filename}", output_mask_path))
-    output_zip = f"{str(datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))}segmented_{endpoint_filename}_images"
+    output_zip = f"{str(datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))}segmented_{endpoint_filename}_images"
     shutil.make_archive(output_zip, 'zip', output_dir)
     shutil.rmtree(output_dir)
     shutil.rmtree(folder_name)
