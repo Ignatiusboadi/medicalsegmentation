@@ -46,7 +46,8 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_w
 # Load model
 model = smp.Unet(encoder_name="resnet50", encoder_weights='imagenet', in_channels=1, classes=1).to(device)
 model_path = "models/best_model.pth"
-model.load_state_dict(torch.load(model_path, map_location=device))
+model.load_state_dict(torch.load(model_path, map_location=device).state_dict())
+# model.load_state_dict(torch.load("models/best_model.pth"))
 
 # Ensure the directory exists for saving outputs
 def create_output_dir(output_dir):
