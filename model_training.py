@@ -40,7 +40,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     root_dir = '/'
     lr = 0.001
-    num_epochs = 2
+    num_epochs = 10
     batch_size = 32
     workers = 4
 
