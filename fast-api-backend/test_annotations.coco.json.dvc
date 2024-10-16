@@ -1,5 +1,0 @@
-outs:
-- md5: 0386c966b0b495a6f37e519d7eeb73b7
-  size: 79647
-  hash: md5
-  path: test_annotations.coco.json
