@@ -3,10 +3,16 @@ name: DVC Pull from GCS
 on:
   push:
     branches:
-      - main  # Trigger on push to the 'main' branch
+      - main  
   pull_request:
     branches:
-      - main  # Trigger on pull request to the 'main' branch
+      - main  
+env:
+  PROJECT_ID: 'image-segmentation-438322' 
+  NAME: 'image-segmentation-repo'
+  REGION: 'us-central1' 
+  SERVICE: 'image-segmentation-app' 
+  LOCATION: 'us-central1'
 
 jobs:
   dvc-pull:
@@ -38,34 +44,34 @@ jobs:
           gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
           gcloud config set project focus-surfer-435213-g6
 
-      - name: Set up environment variables
-        env:
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-          # MLFLOW_TRACKING_TOKEN: ${{ secrets.MLFLOW_TRACKING_TOKEN }}
-        run: |
-          echo "Environment variables set"
-          
-      # # Configure the DVC remote to use Google Cloud Storage (GCS)
-      # - name: Configure DVC Remote
+      # - name: Set up environment variables
+      #   env:
+      #     MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
+      #     MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+      #     MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+      #     # MLFLOW_TRACKING_TOKEN: ${{ secrets.MLFLOW_TRACKING_TOKEN }}
       #   run: |
-      #     dvc remote add -d myremote gs://your-bucket-name/path  # Change this to your GCS bucket path
-      #     dvc remote modify myremote credentialpath /tmp/gcloud-service-key.json
-
-      # Fetch the metadata and pull the data from the GCS bucket using DVC
+      #     echo "Environment variables set"
+          
       - name: DVC Fetch and Pull
         run: |
           dvc remote list
           dvc remote modify brain_remote credentialpath /tmp/gcloud-service-key.json
           dvc pull -v -f
 
-      - name: Model Retraining
-        run: |
-          pip install -r requirements.txt
-          python model_testing.py
+      - name: 'Build and Push Container'
+        run: |-
+          docker build -t "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NAME }}/${{ env.SERVICE }}:${{ github.sha }}" ./
+          docker push "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NAME }}/${{ env.SERVICE }}:${{ github.sha }}"
+      
 
-
-      # Optional: Clean up the temporary Google Cloud credentials file
-      - name: Clean up credentials
-        run: rm /tmp/gcloud-service-key.json
+      -  name: 'Deploy to Cloud Run'
+         run:  |
+           gcloud run deploy image-segmentation-app \
+            --image "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NAME }}/${{ env.SERVICE }}:${{ github.sha }}" \
+            --platform managed \
+            --region us-central1 \
+            --allow-unauthenticated
+     
+      - name: 'Show output'
+        run: echo ${{ steps.deploy.outputs.url }}
