@@ -136,13 +136,13 @@ jobs:
       #     region: '${{ env.REGION }}'
       #     image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NAME }}/${{ env.SERVICE }}:${{ github.sha }}"
       #     port: 8000
-      -  name: 'Deploy to Cloud Run'
-         run:  |
-           gcloud run deploy image-segmentation-app \
-            --image "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NAME }}/${{ env.SERVICE }}:${{ github.sha }}" \
-            --platform managed \
-            --region us-central1 \
-            --allow-unauthenticated
+      # -  name: 'Deploy to Cloud Run'
+      #    run:  |
+      #      gcloud run deploy image-segmentation-app \
+      #       --image "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NAME }}/${{ env.SERVICE }}:${{ github.sha }}" \
+      #       --platform managed \
+      #       --region us-central1 \
+      #       --allow-unauthenticated
      
       - name: 'Show output'
         run: echo ${{ steps.deploy.outputs.url }}
