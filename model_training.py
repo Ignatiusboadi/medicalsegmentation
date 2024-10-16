@@ -10,16 +10,16 @@ import segmentation_models_pytorch as smp
 import torch
 
 
-def start_or_get_run():
-    if mlflow.active_run() is None:
-        mlflow.start_run()
-    else:
-        print(f"Active run with UUID {mlflow.active_run().info.run_id} already exists")
+# def start_or_get_run():
+#     if mlflow.active_run() is None:
+#         mlflow.start_run()
+#     else:
+#         print(f"Active run with UUID {mlflow.active_run().info.run_id} already exists")
 
 
-def end_active_run():
-    if mlflow.active_run() is not None:
-        mlflow.end_run()
+# def end_active_run():
+#     if mlflow.active_run() is not None:
+#         mlflow.end_run()
 
 
 def clamp_tensor(x):
@@ -33,10 +33,10 @@ def main():
     
     dagshub.init(repo_owner='ignatiusboadi', repo_name='dagshub_proj_II', mlflow=True)
 
-    mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
-    mlflow.set_experiment("proj-II-model-training")
-    end_active_run()
-    start_or_get_run()
+    # mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
+    # mlflow.set_experiment("proj-II-model-training")
+    # end_active_run()
+    # start_or_get_run()
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     root_dir = '/'
     lr = 0.001
@@ -44,7 +44,7 @@ def main():
     batch_size = 32
     workers = 4
 
-    mlflow.log_params({'device': device, 'l_rate': lr, 'epochs': num_epochs, 'batch': batch_size, })
+    # mlflow.log_params({'device': device, 'l_rate': lr, 'epochs': num_epochs, 'batch': batch_size, })
 
     transform = transforms.Compose([
         transforms.Resize(224),
@@ -118,7 +118,7 @@ def main():
             best_val_loss = avg_valid_loss
             torch.save(model, f'models/best_model.pth')
             training_loss = avg_train_loss
-    mlflow.log_metrics({'best validation loss': best_val_loss, 'final training loss': training_loss})
+    # mlflow.log_metrics({'best validation loss': best_val_loss, 'final training loss': training_loss})
 
 
 if __name__ == '__main__':
