@@ -14,9 +14,11 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 
+
 # Define transforms for the dataset
 def clamp_tensor(x):
     return x.clamp(0, 1)
+
 
 transform = transforms.Compose([
     transforms.Resize(224),
@@ -49,11 +51,13 @@ model_path = "models/best_model.pth"
 model.load_state_dict(torch.load(model_path, map_location=device).state_dict())
 # model.load_state_dict(torch.load("models/best_model.pth"))
 
+
 # Ensure the directory exists for saving outputs
 def create_output_dir(output_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     print(f"Saving images to {output_dir}")
+
 
 def visualize_input_output_target(input_image, output_image, target_image, output_dir, img_count):
     input_image = input_image.cpu()
@@ -84,6 +88,7 @@ def visualize_input_output_target(input_image, output_image, target_image, outpu
 
     print(f"Saved visualization {img_count} to {output_path}")
 
+
 # Function to zip the output images
 def zip_output_images(output_dir, zip_filename):
     with ZipFile(zip_filename, 'w') as zipf:
@@ -93,11 +98,12 @@ def zip_output_images(output_dir, zip_filename):
                 zipf.write(file_path, os.path.relpath(file_path, output_dir))
     print(f"Zipped images into {zip_filename}")
 
+
 @app.get("/process-images/")
 async def process_images():
     output_dir = 'output_images'  # Directory where images will be saved
     create_output_dir(output_dir)
-    
+
     model.eval()
     img_count = 0  # Initialize image counter
 
@@ -114,7 +120,7 @@ async def process_images():
 
             # Visualize and save the result in the specified directory
             visualize_input_output_target(X[0], y_pred_binary[0], y[0], output_dir, img_count)
-    
+
     zip_filename = 'output_images.zip'
     zip_filename_path = os.path.join(output_dir, zip_filename)
     zip_output_images(output_dir, zip_filename_path)
