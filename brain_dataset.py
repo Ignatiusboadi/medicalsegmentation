@@ -57,17 +57,17 @@ class BrainDataset(ProdBrainDataset):
     #     return img_gray, None
 
     def __getitem__(self, idx):
-    img_gray = super().__getitem__(idx)
+        img_gray = super().__getitem__(idx)
+        
+        if self.mask_dir and len(self.mask_files) > idx:
+            mask_name = self.mask_files[idx]
+            mask_path = os.path.join(self.mask_dir, mask_name)
+            if not os.path.exists(mask_path):
+                raise FileNotFoundError(f"Mask file '{mask_path}' does not exist.")
+            mask = Image.open(mask_path).convert('L')
+            if self.transform:
+                mask = self.transform(mask)
+            return img_gray, mask
     
-    if self.mask_dir and len(self.mask_files) > idx:
-        mask_name = self.mask_files[idx]
-        mask_path = os.path.join(self.mask_dir, mask_name)
-        if not os.path.exists(mask_path):
-            raise FileNotFoundError(f"Mask file '{mask_path}' does not exist.")
-        mask = Image.open(mask_path).convert('L')
-        if self.transform:
-            mask = self.transform(mask)
-        return img_gray, mask
-
-    return img_gray, None
+        return img_gray, None
 
