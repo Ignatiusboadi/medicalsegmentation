@@ -27,24 +27,11 @@ def clamp_tensor(x):
 
 
 def main():
-    # # Retrieve environment variables
-    # mlflow_username = os.getenv('MLFLOW_TRACKING_USERNAME')
-    # mlflow_password = os.getenv('MLFLOW_TRACKING_PASSWORD')
-    # mlflow_uri = os.getenv('MLFLOW_TRACKING_URI')
-
-    # # Set the environment variables for MLflow
-    # os.environ['MLFLOW_TRACKING_USERNAME'] = str(mlflow_username)
-    # os.environ['MLFLOW_TRACKING_PASSWORD'] = str(mlflow_password)
-    # os.environ['MLFLOW_TRACKING_URI'] = str(mlflow_uri)
-
-    # dagshub.init(repo_owner='ignatiusboadi', repo_name='dagshub_proj_II', mlflow=True)
-
-    # Load environment variables (make sure they're set in GitHub Secrets)
     os.environ['MLFLOW_TRACKING_USERNAME'] = 'ignatiusboadi'
     os.environ['MLFLOW_TRACKING_PASSWORD'] = '106194666f336cdf76299c9d2bcf18072e8b3ac8'
     os.environ['MLFLOW_TRACKING_URI'] = 'https://dagshub.com/ignatiusboadi/dagshub_proj_II.mlflow'
-
-    dagshub.init(repo_owner='ignatiusboadi', repo_name='dagshub_proj_II', mlflow=True)
+    
+    dagshub.init(repo_owner='ignatiusboadi', repo_name='dagshub_proj_II',token='67ea7e8b48b9a51dd1748b8bb71906cc5806eb09', mlflow=True)
 
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI"))
     mlflow.set_experiment("proj-II-model-training")
@@ -53,7 +40,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     root_dir = '/'
     lr = 0.001
-    num_epochs = 10
+    num_epochs = 2
     batch_size = 32
     workers = 4
 
