@@ -134,6 +134,12 @@ jobs:
           gcloud auth activate-service-account --key-file=/tmp/gcloud-service-key.json
           gcloud config set project focus-surfer-435213-g6
 
+      - name: DVC Fetch and Pull
+        run: |
+          dvc remote list
+          dvc remote modify brain_remote credentialpath /tmp/gcloud-service-key.json
+          dvc pull -v -f
+
       -  name: 'Authenticate to Google Cloud'
          id: 'auth'
          uses: 'google-github-actions/auth@v2'
