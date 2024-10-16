@@ -63,16 +63,16 @@ jobs:
       #   run: |
       #     echo "Environment variables set"
           
-      # - name: DVC Fetch and Pull
-      #   run: |
-      #     dvc remote list
-      #     dvc remote modify brain_remote credentialpath /tmp/gcloud-service-key.json
-      #     dvc pull -v -f
+      - name: DVC Fetch and Pull
+        run: |
+          dvc remote list
+          dvc remote modify brain_remote credentialpath /tmp/gcloud-service-key.json
+          dvc pull -v -f
 
-      # - name: 'Build and Push Container'
-      #   run: |-
-      #     docker build -t "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NAME }}/${{ env.SERVICE }}:${{ github.sha }}" ./
-      #     docker push "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NAME }}/${{ env.SERVICE }}:${{ github.sha }}"
+      - name: 'Build and Push Container'
+        run: |-
+          docker build -t "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NAME }}/${{ env.SERVICE }}:${{ github.sha }}" ./
+          docker push "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.NAME }}/${{ env.SERVICE }}:${{ github.sha }}"
       
 
       # -  name: 'Deploy to Cloud Run'
