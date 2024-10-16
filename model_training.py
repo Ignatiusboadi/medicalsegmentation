@@ -83,7 +83,7 @@ def main():
         model.train()
 
         running_loss = 0.0
-        for i, batch in tqdm(enumerate(train_loader), total=len(train_loader), leave=True, dynamic_ncols=True):
+        for i, batch in tqdm(enumerate(train_loader), total=len(train_loader) - 1, leave=True, dynamic_ncols=True):
             input_img, mask = to_device(batch, device)
             output = model(input_img)
             loss = criterion(output, mask)
